@@ -1,0 +1,287 @@
+/*
+* demo.css
+* File include item demo only specific css only
+******************************************************************************/
+
+.menu .app-brand.demo {
+    min-height: 100px;
+    margin-top: 12px;
+}
+
+.app-brand-logo.demo svg {
+    width: 22px;
+    height: 38px;
+}
+
+.app-brand-text.demo {
+    font-size: 1.75rem;
+    letter-spacing: -0.5px;
+    text-transform: lowercase;
+}
+
+/* ! For .layout-navbar-fixed added fix padding top tpo .layout-page */
+/* Detached navbar */
+.layout-navbar-fixed .layout-wrapper:not(.layout-horizontal):not(.layout-without-menu) .layout-page {
+    padding-top: 76px !important;
+}
+
+/* Default navbar */
+.layout-navbar-fixed .layout-wrapper:not(.layout-without-menu) .layout-page {
+    padding-top: 64px !important;
+}
+
+/* Navbar page z-index issue solution */
+.content-wrapper .navbar {
+    z-index: auto;
+}
+
+/*
+* Content
+******************************************************************************/
+
+.demo-blocks>* {
+    display: block !important;
+}
+
+.demo-inline-spacing>* {
+    margin: 1rem 0.375rem 0 0 !important;
+}
+
+/* ? .demo-vertical-spacing class is used to have vertical margins between elements. To remove margin-top from the first-child, use .demo-only-element class with .demo-vertical-spacing class. For example, we have used this class in forms-input-groups.html file. */
+.demo-vertical-spacing>* {
+    margin-top: 1rem !important;
+    margin-bottom: 0 !important;
+}
+
+.demo-vertical-spacing.demo-only-element> :first-child {
+    margin-top: 0 !important;
+}
+
+.demo-vertical-spacing-lg>* {
+    margin-top: 1.875rem !important;
+    margin-bottom: 0 !important;
+}
+
+.demo-vertical-spacing-lg.demo-only-element> :first-child {
+    margin-top: 0 !important;
+}
+
+.demo-vertical-spacing-xl>* {
+    margin-top: 5rem !important;
+    margin-bottom: 0 !important;
+}
+
+.demo-vertical-spacing-xl.demo-only-element> :first-child {
+    margin-top: 0 !important;
+}
+
+.rtl-only {
+    display: none !important;
+    text-align: left !important;
+    direction: ltr !important;
+}
+
+[dir="rtl"] .rtl-only {
+    display: block !important;
+}
+
+/*
+* Layout demo
+******************************************************************************/
+
+.layout-demo-wrapper {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    margin-top: 1rem;
+}
+
+.layout-demo-placeholder img {
+    width: 900px;
+}
+
+.layout-demo-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* Sidebar style */
+/* ===============================
+   SUPER ELEGANT MODERN SIDEBAR UI
+   =============================== */
+
+/* Sidebar Base */
+#layout-menu {
+    background: linear-gradient(180deg, #ffffff 0%, #f9f9fb 100%);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 6px 0 18px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(16px);
+    padding-top: 4px;
+    transition: all 0.35s ease;
+}
+
+.menu-inner {
+    padding-top: 10px !important;
+}
+
+/* LOGO BAR */
+.app-brand {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 15px 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.75);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(12px);
+}
+
+/* Logo Hover */
+.app-brand img {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.app-brand:hover img {
+    transform: scale(1.08);
+}
+
+/* HEADERS */
+.menu-header-text {
+    font-size: 11.5px;
+    color: #9aa0ac;
+    letter-spacing: 1px;
+    font-weight: 700;
+    padding-left: 10px;
+    margin-bottom: 6px;
+    opacity: 0.75;
+    transition: color 0.3s;
+}
+
+.menu-header-text:hover {
+    color: #006037;
+}
+
+/* MENU ITEMS */
+.menu-item a {
+    padding: 12px 18px !important;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #3c3c3c;
+    transition: all 0.28s ease;
+    position: relative;
+}
+
+/* Icon styling */
+.menu-item i {
+    font-size: 20px;
+    opacity: 0.7;
+    transition: all 0.25s;
+}
+
+/* HOVER EFFECT */
+.menu-item:hover>a {
+    background: linear-gradient(90deg, #e8f5e9, #e0f2eb);
+    color: #006037;
+    transform: translateX(6px);
+    box-shadow: 0 3px 12px rgba(0, 96, 55, 0.15);
+}
+
+.menu-item:hover i {
+    transform: translateX(3px) scale(1.12);
+    opacity: 1;
+    color: #006037;
+}
+
+/* ACTIVE ITEM */
+.menu-item.active>a {
+    background: linear-gradient(90deg, #006e3f, #029254);
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 96, 55, 0.35);
+}
+
+.menu-item.active i {
+    color: #fff !important;
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+/* SUB MENUS */
+.menu-sub .menu-item a {
+    padding-left: 48px !important;
+    font-size: 13px;
+    color: #6a6f7b;
+}
+
+.menu-sub .menu-item:hover a {
+    color: #006037;
+    transform: translateX(4px);
+}
+
+.menu-sub .menu-item.active a {
+    font-weight: 600;
+}
+
+/* SCROLLBAR */
+#layout-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+#layout-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#layout-menu::-webkit-scrollbar-thumb {
+    background: #c6c7d0;
+    border-radius: 20px;
+}
+
+.toast-success {
+    background-color: #51a351 !important;
+}
+
+.toast-error {
+    background-color: #bd362f !important;
+}
+
+.toast-info {
+    background-color: #2f96b4 !important;
+}
+
+.toast-warning {
+    background-color: #f89406 !important;
+}
+
+/* Round icon background */
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+/* Card hover effect */
+.hover-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}

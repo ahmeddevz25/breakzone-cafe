@@ -1,0 +1,22 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.3.3",
+        "autoprefixer": "^10.5.5",
+        "axios": "^1.6.4",
+        "laravel-vite-plugin": "^1.0.0",
+        "postcss": "^8.5.28",
+        "tailwindcss": "^4.3.3",
+        "vite": "^5.0.0"
+    },
+    "dependencies": {
+        "@inertiajs/vue3": "^3.7.0",
+        "@vitejs/plugin-vue": "^6.0.8",
+        "vue": "^3.5.42"
+    }
+}

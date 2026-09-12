@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Supplier;
+use Illuminate\Support\Facades\Log;
+
+class SupplierController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('permission:supplier management')->only('index');
+        $this->middleware('permission:supplier add')->only('store');
+        $this->middleware('permission:supplier edit')->only('update');
+        $this->middleware('permission:supplier delete')->only('destroy');
+    }
+
+    public function index()
+    {
+        try {
+            $suppliers = Supplier::orderBy('id', 'asc')->get();
+            return view('admin.suppliers.index', compact('suppliers'));
+        } catch (\Exception $e) {
+            Log::error('Supplier Index Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Something went wrong while fetching suppliers.');
+        }
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'nullable|string|max:200',
+            'company' => 'nullable|string|max:200',
+            'address' => 'nullable|string|max:250',
+            'mobile' => 'nullable|string|max:25',
+            'ntn_no' => 'nullable|string|max:100',
+            'ntn' => 'nullable|string|max:100',
+            'email' => 'nullable|email|max:100|unique:cafe_suppliers,email',
+            'status' => 'required',
+        ]);
+
+        try {
+            $data = $request->all();
+            if (empty($data['ntn_no']) && !empty($data['ntn'])) {
+                $data['ntn_no'] = $data['ntn'];
+            }
+            $status = strtoupper(trim($request->status ?? 'A'));
+            $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
+
+            Supplier::create($data);
+            return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Supplier Create Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to create supplier. Please try again.');
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'nullable|string|max:200',
+            'company' => 'nullable|string|max:200',
+            'address' => 'nullable|string|max:250',
+            'mobile' => 'nullable|string|max:25',
+            'ntn_no' => 'nullable|string|max:100',
+            'ntn' => 'nullable|string|max:100',
+            'email' => 'nullable|email|max:100|unique:cafe_suppliers,email,' . $id,
+            'status' => 'required',
+        ]);
+
+        try {
+            $supplier = Supplier::findOrFail($id);
+            $data = $request->all();
+            if (isset($data['ntn']) && !isset($data['ntn_no'])) {
+                $data['ntn_no'] = $data['ntn'];
+            }
+            if (isset($data['status'])) {
+                $status = strtoupper(trim($data['status']));
+                $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
+            }
+            $supplier->update($data);
+            return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Supplier Update Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update supplier. Please try again.');
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $supplier = Supplier::findOrFail($id);
+            $supplier->delete();
+            return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Supplier Delete Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete supplier. Please try again.');
+        }
+    }
+}
