@@ -27,7 +27,8 @@ class UserController extends Controller
     {
         $users = User::with('roles')->get();
         $roles = Role::all(); // Spatie Role model
-        return view('admin.users-managment.show-users', compact('users', 'roles'));
+        $schools = DB::table('cafe_schools')->select('id', 'name')->whereNotNull('name')->orderBy('name')->get();
+        return view('admin.users-managment.show-users', compact('users', 'roles', 'schools'));
     }
 
     public function store(Request $request)
@@ -35,6 +36,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'school_name' => 'nullable|string|max:255',
             'password' => 'required|min:6',
             'role' => 'required|exists:roles,name',
         ]);
@@ -44,6 +46,7 @@ class UserController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'school_name' => $request->school_name,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -65,6 +68,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
+            'school_name' => 'nullable|string|max:255',
             'password' => 'nullable|min:6',
             'role' => 'required|exists:roles,name',
         ]);
@@ -73,7 +77,7 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             
-            $data = $request->only('name', 'email');
+            $data = $request->only('name', 'email', 'school_name');
             if ($request->filled('password')) {
                 $data['password'] = Hash::make($request->password);
             }

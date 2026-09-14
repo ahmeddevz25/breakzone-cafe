@@ -28,6 +28,7 @@
                                     <th>Sr. No</th>
                                     <th>Name</th>
                                     <th>Email</th>
+                                    <th>School</th>
                                     <th>Roles</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -38,6 +39,13 @@
                                         <td>{{ $key + 1 }}</td>
                                         <td class="fw-semibold">{{ $user->name }}</td>
                                         <td>{{ $user->email }}</td>
+                                        <td>
+                                            @if($user->school_name)
+                                                <span class="badge bg-label-info text-dark border">{{ $user->school_name }}</span>
+                                            @else
+                                                <span class="text-muted small">N/A</span>
+                                            @endif
+                                        </td>
 
                                         {{-- Role(s) --}}
                                         <td>
@@ -52,6 +60,7 @@
                                                     <a href="javascript:void(0);" class="text-primary fs-5 editUserBtn"
                                                         data-id="{{ $user->id }}" data-name="{{ $user->name }}"
                                                         data-email="{{ $user->email }}"
+                                                        data-school="{{ $user->school_name ?? '' }}"
                                                         data-role="{{ $user->roles->first()->name ?? '' }}" data-bs-toggle="modal"
                                                         data-bs-target="#userModal">
                                                         <i class='bx bx-edit'></i>
@@ -71,7 +80,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted">No users available.</td>
+                                        <td colspan="6" class="text-center text-muted">No users available.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -81,51 +90,63 @@
                     <!-- Add/Edit User Modal -->
                     <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel"
                         aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <form id="userForm" method="POST">
                                     @csrf
                                     <div id="formMethod"></div>
 
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="userModalLabel">Add New User</h5>
+                                        <h5 class="modal-title fw-bold" id="userModalLabel">Add New User</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
                                     <div class="modal-body">
-                                        {{-- Name --}}
-                                        <div class="mb-3">
-                                            <label class="form-label">Name</label>
-                                            <input type="text" name="name" id="user_name" class="form-control"
-                                                required>
+                                        <div class="row">
+                                            {{-- Name --}}
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">Name</label>
+                                                <input type="text" name="name" id="user_name" class="form-control"
+                                                    placeholder="Enter full name" required>
+                                            </div>
+
+                                            {{-- Email --}}
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">Email</label>
+                                                <input type="email" name="email" id="user_email" class="form-control"
+                                                    placeholder="Enter email address" required>
+                                            </div>
+
+                                            {{-- Password --}}
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">Password</label>
+                                                <input type="password" name="password" id="user_password" class="form-control"
+                                                    placeholder="••••••••">
+                                                <small class="text-muted d-block mt-1">Leave blank if not changing</small>
+                                            </div>
+
+                                            {{-- School (Before Assign Role) --}}
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">School</label>
+                                                <select name="school_name" id="user_school" class="form-select">
+                                                    <option value="">-- Select School --</option>
+                                                    @foreach ($schools as $school)
+                                                        <option value="{{ $school->name }}">{{ $school->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            {{-- Role --}}
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label fw-semibold">Assign Role</label>
+                                                <select name="role" id="user_role" class="form-select" required>
+                                                    <option value="" disabled>-- Select Role --</option>
+                                                    @foreach ($roles as $role)
+                                                        <option value="{{ $role->name }}">{{ $role->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
-
-                                        {{-- Email --}}
-                                        <div class="mb-3">
-                                            <label class="form-label">Email</label>
-                                            <input type="email" name="email" id="user_email" class="form-control"
-                                                required>
-                                        </div>
-
-                                        {{-- Password --}}
-                                        <div class="mb-3">
-                                            <label class="form-label">Password</label>
-                                            <input type="password" name="password" id="user_password" class="form-control">
-                                            <small class="text-muted">Leave blank if not changing</small>
-                                        </div>
-
-                                        {{-- Role --}}
-                                        <div class="mb-3">
-                                            <label class="form-label">Assign Role</label>
-                                            <select name="role" id="user_role" class="form-select" required>
-                                                <option value="" disabled>-- Select Role --</option>
-                                                @foreach ($roles as $role)
-                                                    <option value="{{ $role->name }}">{{ $role->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-
                                     </div>
 
                                     <div class="modal-footer">
@@ -152,6 +173,7 @@
         let formMethod = document.getElementById("formMethod");
         let nameInput = document.getElementById("user_name");
         let emailInput = document.getElementById("user_email");
+        let schoolSelect = document.getElementById("user_school");
         let roleSelect = document.getElementById("user_role");
         let passInput = document.getElementById("user_password");
         let modalTitle = document.getElementById("userModalLabel");
@@ -164,11 +186,10 @@
 
             nameInput.value = "";
             emailInput.value = "";
+            schoolSelect.value = "";
             roleSelect.value = "";
             passInput.value = "";
             passInput.required = true;
-
-
 
             modalTitle.textContent = "Add New User";
             submitBtn.textContent = "Add User";
@@ -180,20 +201,18 @@
                 let id = this.dataset.id;
                 let name = this.dataset.name;
                 let email = this.dataset.email;
+                let school = this.dataset.school || "";
                 let role = this.dataset.role;
-
-
 
                 form.action = "/users/" + id; // /users/{id}
                 formMethod.innerHTML = `{!! method_field('PUT') !!}`;
 
                 nameInput.value = name;
                 emailInput.value = email;
+                schoolSelect.value = school;
                 roleSelect.value = role;
                 passInput.value = "";
                 passInput.required = false;
-
-
 
                 modalTitle.textContent = "Edit User";
                 submitBtn.textContent = "Update User";
