@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use App\Models\CafeSetting;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void 
     {
+        if (config('app.env') === 'production' || env('APP_ENV') === 'production') {
+            URL::forceScheme('https');
+        }
+
         // Share cafe settings with all views dynamically
         try {
             $cafeSetting = Cache::rememberForever('cafe_setting', function () {
