@@ -22,7 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'school_name',
+        'cafe_school_id',
+        'store_id',
     ];
 
     /**
@@ -44,4 +45,36 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Get list of school IDs as an array.
+     */
+    public function getCafeSchoolIdsAttribute(): array
+    {
+        if (empty($this->attributes['cafe_school_id'])) {
+            return [];
+        }
+        $val = $this->attributes['cafe_school_id'];
+        $decoded = json_decode($val, true);
+        if (is_array($decoded)) {
+            return array_map('intval', $decoded);
+        }
+        return array_values(array_filter(array_map('intval', explode(',', $val))));
+    }
+
+    /**
+     * Get list of store IDs as an array.
+     */
+    public function getStoreIdsAttribute(): array
+    {
+        if (empty($this->attributes['store_id'])) {
+            return [];
+        }
+        $val = $this->attributes['store_id'];
+        $decoded = json_decode($val, true);
+        if (is_array($decoded)) {
+            return array_map('intval', $decoded);
+        }
+        return array_values(array_filter(array_map('intval', explode(',', $val))));
+    }
 }
