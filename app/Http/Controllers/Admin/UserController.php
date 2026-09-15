@@ -6,6 +6,7 @@ use App\Models\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -27,8 +28,14 @@ class UserController extends Controller
     {
         $users = User::with('roles')->get();
         $roles = Role::all(); // Spatie Role model
-        $schools = DB::table('cafe_schools')->select('id', 'name')->whereNotNull('name')->orderBy('name')->get();
-        $stores = DB::table('cafe_stores')->select('id', 'store')->orderBy('store')->get();
+        
+        $schools = Schema::hasTable('cafe_schools')
+            ? DB::table('cafe_schools')->select('id', 'name')->whereNotNull('name')->orderBy('name')->get()
+            : collect();
+
+        $stores = Schema::hasTable('cafe_stores')
+            ? DB::table('cafe_stores')->select('id', 'store')->orderBy('store')->get()
+            : collect();
 
         $schoolsMap = $schools->pluck('name', 'id')->toArray();
         $storesMap = $stores->pluck('store', 'id')->toArray();
