@@ -57,13 +57,128 @@
                     <div class="row mb-5">
                         <div class="col-12">
                             <div class="card shadow-sm border-0" style="border-radius: 12px;">
-                                <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
-                                    <h5 class="fw-bold text-dark mb-0 fs-4">Daily Sales Analytics</h5>
+                                <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-1 fs-4">Daily Sales Analytics</h5>
+                                        <p class="text-muted mb-0" style="font-size: 13px;">Daily performance breakdown by Sales Associates</p>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        @foreach($salesAssociatesData as $associate)
+                                            <div class="badge bg-light text-dark border px-3 py-2 d-flex align-items-center gap-2" style="border-radius: 8px;">
+                                                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: {{ $associate['color'] }};"></span>
+                                                <span class="fw-bold text-dark" style="font-size: 12px;">{{ $associate['name'] }}</span>
+                                                <span class="text-muted fw-bold" style="font-size: 11px;">(Rs {{ number_format($associate['total_sales']) }})</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
-                                <div class="card-body px-4 pb-4">
+                                <div class="card-body px-4 pb-4 pt-2">
                                     <!-- Increased height significantly for better readability -->
                                     <div style="height: 400px; width: 100%;">
                                         <canvas id="dailySalesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Procurement & Inventory Highlights -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-success rounded" style="width: 5px; height: 24px;"></div>
+                                <h4 class="fw-bold text-dark mb-0">Procurement & Inventory Highlights</h4>
+                            </div>
+                            <a href="{{ route('purchases.index') }}" target="_blank" class="btn btn-sm btn-outline-primary fw-semibold">
+                                <i class="bx bx-cart me-1"></i> Manage Purchases
+                            </a>
+                        </div>
+
+                        <div class="row g-4">
+                            <!-- Total Purchases Spend -->
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-uppercase fw-bold text-dark" style="font-size: 12px; letter-spacing: 0.5px;">Total Purchases</span>
+                                                <div class="d-flex align-items-end my-2">
+                                                    <h4 class="mb-0 fw-bold text-dark">Rs {{ number_format($totalPurchasesAmount, 2) }}</h4>
+                                                </div>
+                                                <span class="badge bg-label-success rounded-pill px-2.5 py-1 fw-bold text-dark" style="font-size: 11px;">
+                                                    {{ $counts['purchases'] ?? 0 }} Total {{ Str::plural('Order', $counts['purchases'] ?? 0) }}
+                                                </span>
+                                            </div>
+                                            <div class="avatar bg-label-success rounded p-2" style="width: 48px; height: 48px;">
+                                                <i class="bx bx-cart-alt bx-sm"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Purchases Spend -->
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-uppercase fw-bold text-dark" style="font-size: 12px; letter-spacing: 0.5px;">This Month Purchases</span>
+                                                <div class="d-flex align-items-end my-2">
+                                                    <h4 class="mb-0 fw-bold text-dark">Rs {{ number_format($monthlyPurchasesAmount, 2) }}</h4>
+                                                </div>
+                                                <span class="badge bg-label-info rounded-pill px-2.5 py-1 fw-bold text-dark" style="font-size: 11px;">
+                                                    {{ $monthlyPurchasesCount ?? 0 }} {{ Str::plural('Order', $monthlyPurchasesCount ?? 0) }} ({{ now()->format('M Y') }})
+                                                </span>
+                                            </div>
+                                            <div class="avatar bg-label-info rounded p-2" style="width: 48px; height: 48px;">
+                                                <i class="bx bx-calendar bx-sm"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Catalog Products & Stock -->
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-uppercase fw-bold text-dark" style="font-size: 12px; letter-spacing: 0.5px;">Menu & Food Catalog</span>
+                                                <div class="d-flex align-items-end my-2">
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ ($counts['items'] ?? 0) + ($counts['foods'] ?? 0) }} Active</h4>
+                                                </div>
+                                                <span class="badge bg-label-warning rounded-pill px-2.5 py-1 fw-bold text-dark" style="font-size: 11px;">
+                                                    {{ $counts['items'] ?? 0 }} Items &bull; {{ $counts['foods'] ?? 0 }} Foods
+                                                </span>
+                                            </div>
+                                            <div class="avatar bg-label-warning rounded p-2" style="width: 48px; height: 48px;">
+                                                <i class="bx bx-restaurant bx-sm"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stores & Suppliers Network -->
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="content-left">
+                                                <span class="text-uppercase fw-bold text-dark" style="font-size: 12px; letter-spacing: 0.5px;">Network Operations</span>
+                                                <div class="d-flex align-items-end my-2">
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ $counts['stores'] ?? 0 }} Stores</h4>
+                                                </div>
+                                                <span class="badge bg-label-primary rounded-pill px-2.5 py-1 fw-bold text-dark" style="font-size: 11px;">
+                                                    {{ $counts['suppliers'] ?? 0 }} Suppliers &bull; {{ $counts['ingredients'] ?? 0 }} Ingredients
+                                                </span>
+                                            </div>
+                                            <div class="avatar bg-label-primary rounded p-2" style="width: 48px; height: 48px;">
+                                                <i class="bx bx-store-alt bx-sm"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -80,40 +195,59 @@
                         <div class="row g-3">
                             @php
                                 $cafeLinks = [
-                                    ['name' => 'STORES', 'icon' => 'bx-store-alt', 'color' => 'primary'],
-                                    ['name' => 'SUPPLIERS', 'icon' => 'bx-group', 'color' => 'success'],
-                                    ['name' => 'BRANDS', 'icon' => 'bx-medal', 'color' => 'info'],
-                                    ['name' => 'CATEGORIES', 'icon' => 'bx-category', 'color' => 'warning'],
-                                    ['name' => 'UNITS', 'icon' => 'bx-ruler', 'color' => 'danger'],
-                                    ['name' => 'ITEMS', 'icon' => 'bx-box', 'color' => 'secondary'],
-                                    ['name' => 'INGREDIENTS', 'icon' => 'bx-bowl-rice', 'color' => 'primary'],
-                                    ['name' => 'FOODS', 'icon' => 'bx-restaurant', 'color' => 'success'],
-                                    ['name' => 'COMBO PRODUCTS', 'icon' => 'bx-git-merge', 'color' => 'info'],
-                                    ['name' => 'PURCHASES', 'icon' => 'bx-cart-alt', 'color' => 'warning'],
-                                    ['name' => 'PURCHASE RETURNS', 'icon' => 'bx-cart-download', 'color' => 'danger'],
-                                    ['name' => 'CARDS', 'icon' => 'bx-credit-card', 'color' => 'primary'],
-                                    ['name' => 'SALES', 'icon' => 'bx-cart', 'color' => 'success'],
-                                    ['name' => 'SALE RETURNS', 'icon' => 'bx-receipt', 'color' => 'info'],
-                                    ['name' => 'DISPOSALS', 'icon' => 'bx-trash', 'color' => 'warning'],
-                                    ['name' => 'TRANSFERS', 'icon' => 'bx-transfer', 'color' => 'danger'],
-                                    ['name' => 'CASH CATEGORIES', 'icon' => 'bx-wallet', 'color' => 'secondary'],
-                                    ['name' => 'RECEIPTS', 'icon' => 'bx-file', 'color' => 'primary'],
-                                    ['name' => 'EXPENSES', 'icon' => 'bx-money-withdraw', 'color' => 'success'],
-                                    ['name' => 'APP NOTIFICATIONS', 'icon' => 'bx-bell', 'color' => 'info'],
-                                    ['name' => 'REPORTS', 'icon' => 'bx-spreadsheet', 'color' => 'warning']
+                                    ['name' => 'STORES', 'icon' => 'bx-store-alt', 'color' => 'primary', 'route' => route('stores.index'), 'count' => $counts['stores'] ?? 0],
+                                    ['name' => 'SUPPLIERS', 'icon' => 'bx-group', 'color' => 'success', 'route' => route('suppliers.index'), 'count' => $counts['suppliers'] ?? 0],
+                                    ['name' => 'BRANDS', 'icon' => 'bx-purchase-tag', 'color' => 'info', 'route' => route('brands.index'), 'count' => $counts['brands'] ?? 0],
+                                    ['name' => 'CATEGORIES', 'icon' => 'bx-category', 'color' => 'warning', 'route' => route('categories.index'), 'count' => $counts['categories'] ?? 0],
+                                    ['name' => 'UNITS', 'icon' => 'bx-cube', 'color' => 'danger', 'route' => route('units.index'), 'count' => $counts['units'] ?? 0],
+                                    ['name' => 'ITEMS', 'icon' => 'bx-coffee', 'color' => 'secondary', 'route' => route('items.index'), 'count' => $counts['items'] ?? 0],
+                                    ['name' => 'INGREDIENTS', 'icon' => 'bx-dish', 'color' => 'primary', 'route' => route('ingredients.index'), 'count' => $counts['ingredients'] ?? 0],
+                                    ['name' => 'FOODS', 'icon' => 'bx-restaurant', 'color' => 'success', 'route' => route('foods.index'), 'count' => $counts['foods'] ?? 0],
+                                    ['name' => 'COMBO PRODUCTS', 'icon' => 'bx-git-merge', 'color' => 'info', 'route' => null, 'count' => null],
+                                    ['name' => 'PURCHASES', 'icon' => 'bx-cart', 'color' => 'warning', 'route' => route('purchases.index'), 'count' => $counts['purchases'] ?? 0],
+                                    ['name' => 'PURCHASE RETURNS', 'icon' => 'bx-cart-download', 'color' => 'danger', 'route' => null, 'count' => null],
+                                    ['name' => 'CARDS', 'icon' => 'bx-credit-card', 'color' => 'primary', 'route' => null, 'count' => null],
+                                    ['name' => 'SALES', 'icon' => 'bx-shopping-bag', 'color' => 'success', 'route' => null, 'count' => null],
+                                    ['name' => 'SALE RETURNS', 'icon' => 'bx-receipt', 'color' => 'info', 'route' => null, 'count' => null],
+                                    ['name' => 'DISPOSALS', 'icon' => 'bx-trash', 'color' => 'warning', 'route' => null, 'count' => null],
+                                    ['name' => 'TRANSFERS', 'icon' => 'bx-transfer', 'color' => 'danger', 'route' => null, 'count' => null],
+                                    ['name' => 'CASH CATEGORIES', 'icon' => 'bx-wallet', 'color' => 'secondary', 'route' => null, 'count' => null],
+                                    ['name' => 'RECEIPTS', 'icon' => 'bx-file', 'color' => 'primary', 'route' => null, 'count' => null],
+                                    ['name' => 'EXPENSES', 'icon' => 'bx-money-withdraw', 'color' => 'success', 'route' => null, 'count' => null],
+                                    ['name' => 'APP NOTIFICATIONS', 'icon' => 'bx-bell', 'color' => 'info', 'route' => null, 'count' => null],
+                                    ['name' => 'REPORTS', 'icon' => 'bx-spreadsheet', 'color' => 'warning', 'route' => null, 'count' => null]
                                 ];
                             @endphp
 
                             @foreach($cafeLinks as $link)
                             <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.classList.add('shadow');" onmouseout="this.style.transform='translateY(0)'; this.classList.remove('shadow');">
-                                    <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center gap-3">
-                                        <div class="avatar bg-label-{{ $link['color'] }} rounded p-2" style="width: 50px; height: 50px;">
-                                            <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                @if($link['route'])
+                                    <a href="{{ $link['route'] }}" target="_blank" class="text-decoration-none d-block h-100">
+                                        <div class="card h-100 shadow-sm border-0 position-relative" style="border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.classList.add('shadow');" onmouseout="this.style.transform='translateY(0)'; this.classList.remove('shadow');">
+                                            <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                                                <div class="avatar bg-label-{{ $link['color'] }} rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                    <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                                </div>
+                                                <span class="fw-bold text-dark text-uppercase" style="font-size: 13px; line-height: 1.2;">{{ $link['name'] }}</span>
+                                                <span class="badge bg-label-{{ $link['color'] }} rounded-pill px-2.5 py-1 text-dark fw-bold" style="font-size: 11px;">
+                                                    {{ $link['count'] }} {{ Str::plural('Record', $link['count']) }}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span class="fw-bold text-dark text-uppercase" style="font-size: 13px;">{{ $link['name'] }}</span>
+                                    </a>
+                                @else
+                                    <div class="card h-100 shadow-sm border-0 opacity-75" style="border-radius: 12px; cursor: default;">
+                                        <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                                            <div class="avatar bg-label-{{ $link['color'] }} rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                            </div>
+                                            <span class="fw-bold text-dark text-uppercase" style="font-size: 13px; line-height: 1.2;">{{ $link['name'] }}</span>
+                                            <span class="badge bg-label-secondary rounded-pill px-2 py-0.5 text-muted" style="font-size: 10px;">
+                                                Pending
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             </div>
                             @endforeach
                         </div>
@@ -128,24 +262,104 @@
                         <div class="row g-3">
                             @php
                                 $mgmtLinks = [
-                                    ['name' => 'USERS TYPES', 'icon' => 'bx-shield-quarter', 'color' => 'danger'],
-                                    ['name' => 'USERS', 'icon' => 'bx-user-circle', 'color' => 'primary'],
-                                    ['name' => 'USERS LOG', 'icon' => 'bx-list-ul', 'color' => 'success']
+                                    ['name' => 'USERS TYPES', 'icon' => 'bx-shield-quarter', 'color' => 'danger', 'route' => route('roles'), 'count' => $counts['roles'] ?? 0],
+                                    ['name' => 'USERS', 'icon' => 'bx-user', 'color' => 'primary', 'route' => route('users.index'), 'count' => $counts['users'] ?? 0],
+                                    ['name' => 'USERS LOG', 'icon' => 'bx-list-ul', 'color' => 'success', 'route' => null, 'count' => null]
                                 ];
                             @endphp
 
                             @foreach($mgmtLinks as $link)
                             <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.classList.add('shadow');" onmouseout="this.style.transform='translateY(0)'; this.classList.remove('shadow');">
-                                    <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center gap-3">
-                                        <div class="avatar bg-label-{{ $link['color'] }} rounded p-2" style="width: 50px; height: 50px;">
-                                            <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                @if($link['route'])
+                                    <a href="{{ $link['route'] }}" target="_blank" class="text-decoration-none d-block h-100">
+                                        <div class="card h-100 shadow-sm border-0 position-relative" style="border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.classList.add('shadow');" onmouseout="this.style.transform='translateY(0)'; this.classList.remove('shadow');">
+                                            <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                                                <div class="avatar bg-label-{{ $link['color'] }} rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                    <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                                </div>
+                                                <span class="fw-bold text-dark text-uppercase" style="font-size: 13px; line-height: 1.2;">{{ $link['name'] }}</span>
+                                                <span class="badge bg-label-{{ $link['color'] }} rounded-pill px-2.5 py-1 text-dark fw-bold" style="font-size: 11px;">
+                                                    {{ $link['count'] }} {{ Str::plural('Record', $link['count']) }}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span class="fw-bold text-dark text-uppercase" style="font-size: 13px;">{{ $link['name'] }}</span>
+                                    </a>
+                                @else
+                                    <div class="card h-100 shadow-sm border-0 opacity-75" style="border-radius: 12px; cursor: default;">
+                                        <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                                            <div class="avatar bg-label-{{ $link['color'] }} rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                <i class="bx {{ $link['icon'] }} bx-sm"></i>
+                                            </div>
+                                            <span class="fw-bold text-dark text-uppercase" style="font-size: 13px; line-height: 1.2;">{{ $link['name'] }}</span>
+                                            <span class="badge bg-label-secondary rounded-pill px-2 py-0.5 text-muted" style="font-size: 10px;">
+                                                Pending
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             </div>
                             @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Recent Purchases Activity -->
+                    <div class="mb-5">
+                        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                            <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">
+                                        <i class="bx bx-cart text-primary me-2"></i>Recent Purchases
+                                    </h5>
+                                    <p class="text-muted mb-0" style="font-size: 13px;">Latest procurement orders recorded in the system</p>
+                                </div>
+                                <a href="{{ route('purchases.index') }}" target="_blank" class="btn btn-sm btn-primary">
+                                    View All Purchases <i class="bx bx-right-arrow-alt ms-1"></i>
+                                </a>
+                            </div>
+                            <div class="card-body px-4 pb-4 pt-2">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr class="text-dark">
+                                                <th class="fw-bold text-dark">PO NO</th>
+                                                <th class="fw-bold text-dark">STORE</th>
+                                                <th class="fw-bold text-dark">SUPPLIER</th>
+                                                <th class="fw-bold text-dark">PURCHASE DATE</th>
+                                                <th class="fw-bold text-dark text-end">TOTAL AMOUNT</th>
+                                                <th class="fw-bold text-dark text-center">ACTION</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($recentPurchases as $purchase)
+                                                <tr>
+                                                    <td>
+                                                        <span class="badge bg-label-primary fw-bold text-dark">
+                                                            {{ $purchase->po_no }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="fw-bold text-dark">{{ $purchase->store->name ?? '-' }}</td>
+                                                    <td class="fw-bold text-dark">{{ $purchase->supplier->name ?? '-' }}</td>
+                                                    <td class="fw-semibold text-dark">{{ $purchase->purchase_date ? $purchase->purchase_date->format('d M, Y') : '-' }}</td>
+                                                    <td class="text-end fw-bold text-dark" style="color: #006037 !important;">
+                                                        Rs {{ number_format($purchase->total, 2) }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <a href="{{ route('purchases.index') }}" target="_blank" class="btn btn-sm btn-icon btn-outline-primary" title="View Purchase">
+                                                            <i class="bx bx-show"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-4 text-muted">
+                                                        No purchases recorded yet. <a href="{{ route('purchases.index') }}" target="_blank" class="text-primary fw-bold">Create first purchase</a>
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -162,46 +376,14 @@
         document.addEventListener('DOMContentLoaded', function () {
             const ctx = document.getElementById('dailySalesChart').getContext('2d');
             
-            // Vibrant Solid Colors matching Bootstrap palette
-            const colorPrimary = '#696cff';
-            const colorSuccess = '#71dd37';
-            const colorWarning = '#ffab00';
-            const colorDanger = '#ff3e1d';
+            const chartLabels = @json($salesChartLabels);
+            const chartDatasets = @json($salesChartDatasets);
 
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['30-Aug', '31-Aug', '01-Sep', '02-Sep', '03-Sep', '04-Sep', '05-Sep'],
-                    datasets: [
-                        {
-                            label: 'Total',
-                            data: [0, 1100, 1050, 1000, 1070, 700, 20],
-                            backgroundColor: colorPrimary,
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        },
-                        {
-                            label: 'Adnan Aslam',
-                            data: [0, 300, 250, 250, 300, 190, 0],
-                            backgroundColor: colorSuccess,
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        },
-                        {
-                            label: 'Amin Khan',
-                            data: [0, 520, 520, 480, 500, 320, 20],
-                            backgroundColor: colorWarning,
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        },
-                        {
-                            label: 'Sami Khan',
-                            data: [0, 250, 250, 250, 250, 170, 0],
-                            backgroundColor: colorDanger,
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        }
-                    ]
+                    labels: chartLabels,
+                    datasets: chartDatasets
                 },
                 options: {
                     responsive: true,
@@ -214,7 +396,7 @@
                                 usePointStyle: true,
                                 font: { size: 14, weight: 'bold' },
                                 padding: 25,
-                                color: '#566a7f' // text-body color in Sneat
+                                color: '#2b343b' // crisp dark text
                             }
                         },
                         tooltip: {
@@ -223,7 +405,12 @@
                             bodyFont: { size: 13 },
                             padding: 15,
                             cornerRadius: 8,
-                            displayColors: true
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.dataset.label + ': Rs ' + context.parsed.y.toLocaleString();
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -231,12 +418,11 @@
                             grid: { display: false },
                             ticks: { 
                                 font: { size: 13, weight: 'bold' },
-                                color: '#566a7f'
+                                color: '#2b343b'
                             }
                         },
                         y: {
                             beginAtZero: true,
-                            max: 1200,
                             border: { display: false },
                             grid: {
                                 color: '#eceef1',
@@ -245,7 +431,10 @@
                             ticks: { 
                                 font: { size: 13, weight: 'bold' },
                                 padding: 10,
-                                color: '#566a7f'
+                                color: '#2b343b',
+                                callback: function(value) {
+                                    return 'Rs ' + value.toLocaleString();
+                                }
                             }
                         }
                     },

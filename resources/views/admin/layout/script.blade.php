@@ -152,6 +152,104 @@
             });
         });
 
+        // Global AJAX Form Submission Handler with Button Loading Spinner
+        $(document).on('submit', '.modal form, form.ajax-form', function(e) {
+            var form = $(this);
+
+            // Skip if explicitly opted out
+            if (form.data('no-ajax') === true || form.hasClass('no-ajax')) {
+                return true;
+            }
+
+            e.preventDefault();
+
+            var submitBtn = form.find('button[type="submit"], input[type="submit"]');
+            var originalBtnHtml = submitBtn.is('button') ? submitBtn.html() : submitBtn.val();
+
+            // Set loading state on submit button
+            submitBtn.prop('disabled', true);
+            if (submitBtn.is('button')) {
+                submitBtn.data('original-html', originalBtnHtml);
+                submitBtn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Please wait...');
+            } else {
+                submitBtn.val('Please wait...');
+            }
+
+            // Remove existing validation highlights
+            form.find('.is-invalid').removeClass('is-invalid');
+            form.find('.invalid-feedback').remove();
+
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: form.attr('action'),
+                type: form.attr('method') || 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                success: function(response) {
+                    if (response.status || response.success) {
+                        toastr.success(response.message || 'Operation completed successfully.');
+
+                        // Close modal if inside one
+                        var modalEl = form.closest('.modal');
+                        if (modalEl.length) {
+                            var bsModal = bootstrap.Modal.getInstance(modalEl[0]);
+                            if (bsModal) {
+                                bsModal.hide();
+                            } else {
+                                modalEl.modal('hide');
+                            }
+                        }
+
+                        // Smoothly refresh after brief feedback delay
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        restoreSubmitBtn(submitBtn, originalBtnHtml);
+                        toastr.error(response.message || 'An error occurred.');
+                    }
+                },
+                error: function(xhr) {
+                    restoreSubmitBtn(submitBtn, originalBtnHtml);
+
+                    if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                        var errors = xhr.responseJSON.errors;
+                        $.each(errors, function(field, messages) {
+                            var input = form.find('[name="' + field + '"]');
+                            if (!input.length) {
+                                input = form.find('[name="' + field + '[]"]');
+                            }
+                            if (input.length) {
+                                input.addClass('is-invalid');
+                            }
+                            $.each(messages, function(i, msg) {
+                                toastr.error(msg);
+                            });
+                        });
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else {
+                        toastr.error('Something went wrong. Please try again.');
+                    }
+                }
+            });
+        });
+
+        function restoreSubmitBtn(btn, originalHtml) {
+            btn.prop('disabled', false);
+            if (btn.is('button')) {
+                btn.html(originalHtml);
+            } else {
+                btn.val(originalHtml);
+            }
+        }
+
 
     });
 </script>

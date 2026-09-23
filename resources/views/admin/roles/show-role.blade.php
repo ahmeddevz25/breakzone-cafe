@@ -33,26 +33,32 @@
                             </thead>
                             <tbody>
                                 @forelse ($roles as $key => $role)
-                                    <tr>
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold">{{ $role->name }}</td>
+                                    <tr class="text-dark">
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $role->name }}</td>
                                         <td>
                                             @if ($role->permissions->isNotEmpty())
-                                                @foreach ($role->permissions as $permission)
-                                                    <span class="badge bg-info text-dark me-1 mb-1">
-                                                        {{ $permission->name }}
-                                                    </span>
-                                                @endforeach
+                                                <button type="button" 
+                                                    class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 view-permissions-modal-btn fw-semibold"
+                                                    data-role="{{ $role->name }}"
+                                                    data-permissions='@json($role->permissions->pluck("name"))'
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#viewRolePermissionsModal">
+                                                    <i class="bx bx-shield-quarter"></i>
+                                                    <span>{{ $role->permissions->count() }} Permissions</span>
+                                                    <span class="badge bg-primary text-white rounded-pill ms-1" style="font-size: 10px;">View</span>
+                                                </button>
                                             @else
-                                                <span class="text-muted">No Permissions</span>
+                                                <span class="badge bg-label-secondary text-muted">0 Permissions</span>
                                             @endif
                                         </td>
 
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="table-actions">
+                                                {{-- Edit --}}
                                                 @can('role edit')
                                                     <button type="button" title="Edit"
-                                                        class="btn btn-link text-primary fs-5 p-0 edit-role-btn"
+                                                        class="action-btn action-btn-edit edit-role-btn"
                                                         data-id="{{ $role->id }}" 
                                                         data-name="{{ $role->name }}" 
                                                         data-permissions="{{ $role->permissions->pluck('name')->toJson() }}"
@@ -62,10 +68,11 @@
                                                     </button>
                                                 @endcan
 
+                                                {{-- Delete --}}
                                                 @can('role delete')
                                                     <a href="{{ route('roles.delete', $role->id) }}" title="Delete"
                                                         onclick="return confirm('Are you sure you want to delete this role?')"
-                                                        class="text-danger fs-5">
+                                                        class="action-btn action-btn-delete">
                                                         <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan
@@ -81,15 +88,15 @@
                         </table>
                     </div>
 
-                    <!-- Add Role Modal -->
+                    <!-- Add / Edit Role Modal -->
                     <div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel"
                         aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
                                 <form id="roleForm" action="{{ route('roles.store') }}" method="POST">
                                     @csrf
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="addRoleModalLabel">Add New Role</h5>
+                                    <div class="modal-header border-bottom py-3">
+                                        <h5 class="modal-title fw-bold" id="addRoleModalLabel">Add New Role</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
@@ -191,15 +198,59 @@
                                         </div>
                                     </div>
 
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-outline-secondary"
+                                    <div class="modal-footer border-top py-3">
+                                        <button type="button" class="btn btn-outline-secondary px-4"
                                             data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" id="submitBtn" class="btn btn-primary">Create Role</button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary px-4">Create Role</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
+
+                    <!-- View Role Permissions Modal -->
+                    <div class="modal fade" id="viewRolePermissionsModal" tabindex="-1" aria-labelledby="viewRolePermissionsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header border-bottom py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar bg-label-primary rounded p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bx bx-shield-quarter text-primary fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="modal-title fw-bold text-dark mb-0" id="viewRolePermissionsModalLabel">
+                                                Role: <span id="viewModalRoleName" class="text-primary"></span>
+                                            </h5>
+                                            <small class="text-muted">Assigned module permissions</small>
+                                        </div>
+                                        <span id="viewModalPermissionCount" class="badge bg-label-success text-dark fw-bold ms-2 px-2.5 py-1"></span>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+
+                                <div class="modal-body p-4">
+                                    <div class="mb-3">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-dark border-end-0">
+                                                <i class="bx bx-search"></i>
+                                            </span>
+                                            <input type="text" id="permissionSearchInput" class="form-control border-start-0 ps-0 text-dark" placeholder="Filter permissions (e.g. food, purchase, store, user)...">
+                                        </div>
+                                    </div>
+
+                                    <div id="viewPermissionsContainer" style="min-height: 120px;">
+                                        <!-- Dynamically loaded via JS -->
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer border-top py-3">
+                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
 
 
 
@@ -326,6 +377,58 @@
                     updateSelectAll();
                 });
             });
+
+            // View Role Permissions Modal event delegation (works with DataTables pagination)
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.view-permissions-modal-btn');
+                if (!btn) return;
+
+                const roleName = btn.dataset.role || '';
+                let permissions = [];
+                try {
+                    permissions = JSON.parse(btn.dataset.permissions || '[]');
+                } catch(err) {
+                    permissions = [];
+                }
+
+                document.getElementById('viewModalRoleName').textContent = roleName;
+                document.getElementById('viewModalPermissionCount').textContent = permissions.length + ' Total';
+
+                const container = document.getElementById('viewPermissionsContainer');
+                const searchInput = document.getElementById('permissionSearchInput');
+                searchInput.value = '';
+
+                function renderBadges(filterText = '') {
+                    container.innerHTML = '';
+                    const query = filterText.toLowerCase().trim();
+                    const filtered = permissions.filter(p => p.toLowerCase().includes(query));
+
+                    if (filtered.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="bx bx-info-circle fs-2 text-muted d-block mb-1"></i>
+                                <span class="text-dark fw-semibold">No matching permissions found.</span>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const badgesHtml = filtered.map(p => `
+                        <span class="badge bg-label-primary text-dark border px-3 py-2 fw-bold text-uppercase d-inline-flex align-items-center" style="font-size: 12px; letter-spacing: 0.3px; border-radius: 6px;">
+                            <i class="bx bx-check text-success me-1 fs-6"></i>${p}
+                        </span>
+                    `).join('');
+
+                    container.innerHTML = `<div class="d-flex flex-wrap gap-2">${badgesHtml}</div>`;
+                }
+
+                renderBadges();
+
+                searchInput.oninput = function() {
+                    renderBadges(this.value);
+                };
+            });
+
         });
     </script>
 @endsection

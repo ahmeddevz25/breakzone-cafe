@@ -34,9 +34,9 @@
                             <tbody>
                                 @forelse ($units as $key => $unit)
                                     <tr class="text-dark">
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold text-dark">{{ $unit->unit ?? $unit->name }}</td>
-                                        <td class="text-dark">{{ $unit->quantity ?? 0 }}</td>
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $unit->unit ?? $unit->name }}</td>
+                                        <td class="text-dark fw-medium">{{ $unit->quantity ?? 0 }}</td>
                                         <td>
                                             @if ($unit->status == 'A' || $unit->status == 'active' || $unit->status === '1' || $unit->status === 1)
                                                 <span class="badge bg-success">Active</span>
@@ -45,10 +45,11 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="table-actions">
+                                                {{-- Edit --}}
                                                 @can('unit edit')
                                                     <button type="button" title="Edit"
-                                                        class="btn btn-link text-primary fs-5 p-0 edit-unit-btn"
+                                                        class="action-btn action-btn-edit edit-unit-btn"
                                                         data-id="{{ $unit->id }}" 
                                                         data-unit="{{ $unit->unit ?? $unit->name }}" 
                                                         data-quantity="{{ $unit->quantity ?? 0 }}"
@@ -60,10 +61,11 @@
                                                     </button>
                                                 @endcan
 
+                                                {{-- Delete --}}
                                                 @can('unit delete')
                                                     <a href="{{ route('units.delete', $unit->id) }}" title="Delete"
                                                         onclick="return confirm('Are you sure you want to delete this unit?')"
-                                                        class="text-danger fs-5">
+                                                        class="action-btn action-btn-delete">
                                                         <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan
@@ -72,46 +74,46 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted">No units available.</td>
+                                        <td colspan="5" class="text-center text-muted py-4">No units available.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Unified Unit Modal -->
+                    <!-- Unified Unit Modal (Add / Edit) -->
                     <div class="modal fade" id="unitModal" tabindex="-1" aria-labelledby="unitModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <form id="unitForm" action="{{ route('units.store') }}" method="POST">
                                     @csrf
-                                    <div class="modal-header border-bottom">
-                                        <h5 class="modal-title" id="unitModalLabel">Add New Unit</h5>
+                                    <div class="modal-header border-bottom py-3">
+                                        <h5 class="modal-title fw-bold" id="unitModalLabel">Add New Unit</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
                                     <div class="modal-body p-4">
                                         {{-- Unit Name --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Unit <span class="text-danger">*</span></label>
-                                            <input type="text" name="unit" id="unitName" class="form-control" placeholder="e.g. Kg, Pcs, Box" required>
+                                            <label class="form-label fw-semibold">Unit <span class="text-danger">*</span></label>
+                                            <input type="text" name="unit" id="unitName" class="form-control" placeholder="e.g. Kg, Pcs, Box, Liter" required>
                                         </div>
 
                                         {{-- Quantity --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Quantity</label>
+                                            <label class="form-label fw-semibold">Quantity / Value</label>
                                             <input type="number" step="any" name="quantity" id="unitQuantity" class="form-control" value="0">
                                         </div>
 
                                         {{-- Position --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Position</label>
+                                            <label class="form-label fw-semibold">Position / Order</label>
                                             <input type="number" name="position" id="unitPosition" class="form-control" value="0">
                                         </div>
 
                                         {{-- Status --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
                                             <select name="status" id="unitStatus" class="form-select" required>
                                                 <option value="A">Active</option>
                                                 <option value="I">Inactive</option>
@@ -119,14 +121,16 @@
                                         </div>
                                     </div>
 
-                                    <div class="modal-footer border-top">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Clear</button>
-                                        <button type="submit" id="submitBtn" class="btn btn-primary bg-dark border-dark">Save Unit</button>
+                                    <div class="modal-footer border-top py-3">
+                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary px-4">Save Unit</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -154,9 +158,10 @@
                 unitForm.reset();
                 unitQuantity.value = "0";
                 unitPosition.value = "0";
-                unitStatus.value = "A"; // Default to Active (A)
+                unitStatus.value = "A";
             };
 
+            // Edit Unit
             document.querySelectorAll('.edit-unit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -170,7 +175,6 @@
                         status = "I";
                     }
 
-                    // Update form action for editing
                     unitForm.action = `/units/${id}/update`;
                     modalTitle.textContent = 'Edit Unit';
                     submitBtn.textContent = 'Update Unit';
@@ -181,6 +185,8 @@
                     unitStatus.value = status;
                 });
             });
+
+
         });
     </script>
 @endsection

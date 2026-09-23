@@ -42,10 +42,16 @@ class PermissionController extends Controller
             }
             
             DB::commit();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Permission created successfully!']);
+            }
             return back()->with('success', 'Permission created successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Permission Store Error: " . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create permission.'], 500);
+            }
             return back()->with('error', 'Failed to create permission.');
         }
     }
@@ -71,10 +77,16 @@ class PermissionController extends Controller
             $permission = Permission::findOrFail($id);
             $permission->update(['name' => $request->name]);
             DB::commit();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Permission updated successfully!']);
+            }
             return redirect()->route('permissions')->with('success', 'Permission updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Permission Update Error: " . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update permission.'], 500);
+            }
             return back()->with('error', 'Failed to update permission.');
         }
     }

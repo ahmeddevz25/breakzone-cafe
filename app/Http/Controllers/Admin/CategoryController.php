@@ -33,7 +33,7 @@ class CategoryController extends Controller
         $request->validate([
             'category' => 'nullable|string|max:100',
             'name' => 'nullable|string|max:100',
-            'parent_id' => 'nullable|exists:categories,id',
+            'parent_id' => 'nullable|exists:cafe_categories,id',
             'position' => 'nullable|integer',
             'status' => 'required',
         ]);
@@ -46,9 +46,15 @@ class CategoryController extends Controller
             $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
 
             Category::create($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Category created successfully.']);
+            }
             return redirect()->route('categories.index')->with('success', 'Category created successfully.');
         } catch (\Exception $e) {
             Log::error('Category Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create category. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create category. Please try again.');
         }
     }
@@ -58,7 +64,7 @@ class CategoryController extends Controller
         $request->validate([
             'category' => 'nullable|string|max:100',
             'name' => 'nullable|string|max:100',
-            'parent_id' => 'nullable|exists:categories,id',
+            'parent_id' => 'nullable|exists:cafe_categories,id',
             'position' => 'nullable|integer',
             'status' => 'required',
         ]);
@@ -67,6 +73,9 @@ class CategoryController extends Controller
             $category = Category::findOrFail($id);
             // Prevent category from being its own parent
             if ($request->parent_id == $category->id) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['status' => false, 'message' => 'Category cannot be its own parent.'], 422);
+                }
                 return redirect()->back()->with('error', 'Category cannot be its own parent.');
             }
             $data = $request->all();
@@ -78,9 +87,15 @@ class CategoryController extends Controller
                 $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
             }
             $category->update($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Category updated successfully.']);
+            }
             return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
         } catch (\Exception $e) {
             Log::error('Category Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update category. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to update category. Please try again.');
         }
     }

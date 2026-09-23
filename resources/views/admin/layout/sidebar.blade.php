@@ -83,6 +83,30 @@
                 </a>
             </li>
         @endcan
+        @can('ingredient management')
+            <li class="menu-item {{ request()->routeIs('ingredients.*') ? 'active open' : '' }}">
+                <a href="{{ route('ingredients.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-dish"></i>
+                    <div>Ingredients</div>
+                </a>
+            </li>
+        @endcan
+        @can('food management')
+            <li class="menu-item {{ request()->routeIs('foods.*') ? 'active open' : '' }}">
+                <a href="{{ route('foods.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-restaurant"></i>
+                    <div>Foods</div>
+                </a>
+            </li>
+        @endcan
+        @can('purchase management')
+            <li class="menu-item {{ request()->routeIs('purchases.*') ? 'active open' : '' }}">
+                <a href="{{ route('purchases.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-cart"></i>
+                    <div>Purchases</div>
+                </a>
+            </li>
+        @endcan
 
 
         @can('user management')
@@ -97,7 +121,6 @@
                 </a>
             </li>
         @endcan
-
 
         {{-- Roles --}}
         @can('role management')
@@ -127,9 +150,6 @@
                 </a>
             </li>
         @endcan
-
-
-
 
         {{-- Cache Clear --}}
         <li class="menu-header small text-uppercase">

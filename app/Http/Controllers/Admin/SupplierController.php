@@ -34,11 +34,16 @@ class SupplierController extends Controller
             'name' => 'nullable|string|max:200',
             'company' => 'nullable|string|max:200',
             'address' => 'nullable|string|max:250',
-            'mobile' => 'nullable|string|max:25',
-            'ntn_no' => 'nullable|string|max:100',
-            'ntn' => 'nullable|string|max:100',
+            'mobile' => ['required', 'regex:/^[0-9+\-\s()]{7,25}$/'],
+            'ntn_no' => ['nullable', 'regex:/^[0-9\-]{5,20}$/'],
+            'ntn' => ['nullable', 'regex:/^[0-9\-]{5,20}$/'],
             'email' => 'nullable|email|max:100|unique:cafe_suppliers,email',
             'status' => 'required',
+        ], [
+            'mobile.required' => 'The mobile number field is required.',
+            'mobile.regex' => 'The mobile number format is invalid. Please enter numbers only (e.g., 03001234567).',
+            'ntn_no.regex' => 'The NTN # format is invalid. Please enter numbers and hyphens only (e.g., 1234567-8).',
+            'ntn.regex' => 'The NTN # format is invalid. Please enter numbers and hyphens only (e.g., 1234567-8).',
         ]);
 
         try {
@@ -50,9 +55,15 @@ class SupplierController extends Controller
             $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
 
             Supplier::create($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Supplier created successfully.']);
+            }
             return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create supplier. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create supplier. Please try again.');
         }
     }
@@ -63,11 +74,16 @@ class SupplierController extends Controller
             'name' => 'nullable|string|max:200',
             'company' => 'nullable|string|max:200',
             'address' => 'nullable|string|max:250',
-            'mobile' => 'nullable|string|max:25',
-            'ntn_no' => 'nullable|string|max:100',
-            'ntn' => 'nullable|string|max:100',
+            'mobile' => ['required', 'regex:/^[0-9+\-\s()]{7,25}$/'],
+            'ntn_no' => ['nullable', 'regex:/^[0-9\-]{5,20}$/'],
+            'ntn' => ['nullable', 'regex:/^[0-9\-]{5,20}$/'],
             'email' => 'nullable|email|max:100|unique:cafe_suppliers,email,' . $id,
             'status' => 'required',
+        ], [
+            'mobile.required' => 'The mobile number field is required.',
+            'mobile.regex' => 'The mobile number format is invalid. Please enter numbers only (e.g., 03001234567).',
+            'ntn_no.regex' => 'The NTN # format is invalid. Please enter numbers and hyphens only (e.g., 1234567-8).',
+            'ntn.regex' => 'The NTN # format is invalid. Please enter numbers and hyphens only (e.g., 1234567-8).',
         ]);
 
         try {
@@ -81,9 +97,15 @@ class SupplierController extends Controller
                 $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
             }
             $supplier->update($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Supplier updated successfully.']);
+            }
             return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update supplier. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to update supplier. Please try again.');
         }
     }

@@ -27,14 +27,14 @@
                                     <th>#</th>
                                     <th>Brand Name</th>
                                     <th>Status</th>
-                                    <th class="text-center">Actions</th>
+                                    <th class="text-center">Options</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($brands as $key => $brand)
                                     <tr class="text-dark">
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold text-dark">{{ $brand->name }}</td>
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $brand->name }}</td>
                                         <td>
                                             @if ($brand->status == 'A' || $brand->status == 'active' || $brand->status === '1' || $brand->status === 1)
                                                 <span class="badge bg-success">Active</span>
@@ -43,10 +43,11 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="table-actions">
+                                                {{-- Edit --}}
                                                 @can('brand edit')
                                                     <button type="button" title="Edit"
-                                                        class="btn btn-link text-primary fs-5 p-0 edit-brand-btn"
+                                                        class="action-btn action-btn-edit edit-brand-btn"
                                                         data-id="{{ $brand->id }}" 
                                                         data-name="{{ $brand->name }}" 
                                                         data-position="{{ $brand->position ?? 0 }}"
@@ -57,10 +58,11 @@
                                                     </button>
                                                 @endcan
 
+                                                {{-- Delete --}}
                                                 @can('brand delete')
                                                     <a href="{{ route('brands.delete', $brand->id) }}" title="Delete"
                                                         onclick="return confirm('Are you sure you want to delete this brand?')"
-                                                        class="text-danger fs-5">
+                                                        class="action-btn action-btn-delete">
                                                         <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan
@@ -69,40 +71,40 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted">No brands available.</td>
+                                        <td colspan="4" class="text-center text-muted py-4">No brands available.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Unified Brand Modal -->
+                    <!-- Unified Brand Modal (Add / Edit) -->
                     <div class="modal fade" id="brandModal" tabindex="-1" aria-labelledby="brandModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <form id="brandForm" action="{{ route('brands.store') }}" method="POST">
                                     @csrf
-                                    <div class="modal-header border-bottom">
-                                        <h5 class="modal-title" id="brandModalLabel">Add New Brand</h5>
+                                    <div class="modal-header border-bottom py-3">
+                                        <h5 class="modal-title fw-bold" id="brandModalLabel">Add New Brand</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
                                     <div class="modal-body p-4">
                                         {{-- Brand Name --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Brand Name <span class="text-danger">*</span></label>
-                                            <input type="text" name="name" id="brandName" class="form-control" required>
+                                            <label class="form-label fw-semibold">Brand Name <span class="text-danger">*</span></label>
+                                            <input type="text" name="name" id="brandName" class="form-control" placeholder="Enter Brand Name" required>
                                         </div>
 
                                         {{-- Position --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Position</label>
+                                            <label class="form-label fw-semibold">Position / Order</label>
                                             <input type="number" name="position" id="brandPosition" class="form-control" value="0">
                                         </div>
 
                                         {{-- Status --}}
                                         <div class="mb-3">
-                                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
                                             <select name="status" id="brandStatus" class="form-select" required>
                                                 <option value="A">Active</option>
                                                 <option value="I">Inactive</option>
@@ -110,14 +112,16 @@
                                         </div>
                                     </div>
 
-                                    <div class="modal-footer border-top">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Clear</button>
-                                        <button type="submit" id="submitBtn" class="btn btn-primary bg-dark border-dark">Save Brand</button>
+                                    <div class="modal-footer border-top py-3">
+                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary px-4">Save Brand</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -143,9 +147,10 @@
                 submitBtn.textContent = 'Save Brand';
                 brandForm.reset();
                 brandPosition.value = "0";
-                brandStatus.value = "A"; // Default to Active (A)
+                brandStatus.value = "A";
             };
 
+            // Edit Brand
             document.querySelectorAll('.edit-brand-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -158,7 +163,6 @@
                         status = "I";
                     }
 
-                    // Update form action for editing
                     brandForm.action = `/brands/${id}/update`;
                     modalTitle.textContent = 'Edit Brand';
                     submitBtn.textContent = 'Update Brand';
@@ -168,6 +172,8 @@
                     brandStatus.value = status;
                 });
             });
+
+
         });
     </script>
 @endsection

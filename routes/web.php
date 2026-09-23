@@ -91,6 +91,29 @@ Route::middleware(['admin.redirect'])->group(function () {
         Route::post('/items/{id}/update', [\App\Http\Controllers\Admin\ItemController::class, 'update'])->name('items.update');
         Route::get('/items/{id}/delete', [\App\Http\Controllers\Admin\ItemController::class, 'destroy'])->name('items.delete');
 
+        // Ingredients Management
+        Route::get('/ingredients', [\App\Http\Controllers\Admin\IngredientController::class, 'index'])->name('ingredients.index');
+        Route::post('/ingredients/store', [\App\Http\Controllers\Admin\IngredientController::class, 'store'])->name('ingredients.store');
+        Route::post('/ingredients/{id}/update', [\App\Http\Controllers\Admin\IngredientController::class, 'update'])->name('ingredients.update');
+        Route::get('/ingredients/{id}/delete', [\App\Http\Controllers\Admin\IngredientController::class, 'destroy'])->name('ingredients.delete');
+
+        // Foods Management
+        Route::get('/foods', [\App\Http\Controllers\Admin\FoodController::class, 'index'])->name('foods.index');
+        Route::post('/foods/store', [\App\Http\Controllers\Admin\FoodController::class, 'store'])->name('foods.store');
+        Route::post('/foods/{id}/update', [\App\Http\Controllers\Admin\FoodController::class, 'update'])->name('foods.update');
+        Route::get('/foods/{id}/delete', [\App\Http\Controllers\Admin\FoodController::class, 'destroy'])->name('foods.delete');
+        Route::get('/foods/generate-code', [\App\Http\Controllers\Admin\FoodController::class, 'generateCode'])->name('foods.generate-code');
+        Route::get('/foods/{id}/edit-data', [\App\Http\Controllers\Admin\FoodController::class, 'getFoodDetails'])->name('foods.edit-data');
+
+        // Purchases Management
+        Route::get('/purchases', [\App\Http\Controllers\Admin\PurchaseController::class, 'index'])->name('purchases.index');
+        Route::post('/purchases/store', [\App\Http\Controllers\Admin\PurchaseController::class, 'store'])->name('purchases.store');
+        Route::get('/purchases/{id}/edit-data', [\App\Http\Controllers\Admin\PurchaseController::class, 'editData'])->name('purchases.edit-data');
+        Route::post('/purchases/{id}/update', [\App\Http\Controllers\Admin\PurchaseController::class, 'update'])->name('purchases.update');
+        Route::get('/purchases/{id}/delete', [\App\Http\Controllers\Admin\PurchaseController::class, 'destroy'])->name('purchases.delete');
+        Route::get('/purchases/generate-po', [\App\Http\Controllers\Admin\PurchaseController::class, 'generatePoNo'])->name('purchases.generate-po');
+        Route::get('/purchases/product-info', [\App\Http\Controllers\Admin\PurchaseController::class, 'getProductInfo'])->name('purchases.product-info');
+
         Route::get('clear-cache', [AdminController::class, 'clearcache'])->name('clearcache');
 
         // Cafe Settings Routes

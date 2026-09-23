@@ -78,10 +78,16 @@ class UserController extends Controller
             $user->assignRole($request->role);
             DB::commit();
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'User created successfully.']);
+            }
             return redirect()->route('users.index')->with('success', 'User created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('User Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create user.'], 500);
+            }
             return back()->with('error', 'Failed to create user.');
         }
     }
@@ -127,10 +133,16 @@ class UserController extends Controller
             $user->syncRoles([$request->role]);
             DB::commit();
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'User updated successfully.']);
+            }
             return redirect()->route('users.index')->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('User Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update user.'], 500);
+            }
             return back()->with('error', 'Failed to update user.');
         }
     }

@@ -44,6 +44,18 @@ class PermissionSeeder extends Seeder
                 'children' => ['item add', 'item edit', 'item delete'],
             ],
             [
+                'base'     => 'ingredient management',
+                'children' => ['ingredient add', 'ingredient edit', 'ingredient delete'],
+            ],
+            [
+                'base'     => 'food management',
+                'children' => ['food add', 'food edit', 'food delete'],
+            ],
+            [
+                'base'     => 'purchase management',
+                'children' => ['purchase add', 'purchase edit', 'purchase delete'],
+            ],
+            [
                 'base'     => 'user management',
                 'children' => ['user add', 'user edit', 'user delete'],
             ],
@@ -100,6 +112,8 @@ class PermissionSeeder extends Seeder
                     'category management', 'category add', 'category edit',
                     'unit management', 'unit add', 'unit edit',
                     'item management', 'item add', 'item edit',
+                    'ingredient management', 'ingredient add', 'ingredient edit',
+                    'food management', 'food add', 'food edit',
                 ])->get());
             } elseif (in_array($roleName, ['Accountant', 'Branch Accountant'])) {
                 $role->syncPermissions(Permission::whereIn('name', [
@@ -109,6 +123,8 @@ class PermissionSeeder extends Seeder
                     'category management',
                     'unit management',
                     'item management',
+                    'ingredient management',
+                    'food management',
                 ])->get());
             } elseif ($roleName === 'Sales Associate') {
                 $role->syncPermissions(Permission::whereIn('name', [
@@ -116,6 +132,8 @@ class PermissionSeeder extends Seeder
                     'category management',
                     'unit management',
                     'item management',
+                    'ingredient management',
+                    'food management',
                 ])->get());
             }
         }

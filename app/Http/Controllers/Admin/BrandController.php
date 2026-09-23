@@ -43,9 +43,15 @@ class BrandController extends Controller
             $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
 
             Brand::create($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Brand created successfully.']);
+            }
             return redirect()->route('brands.index')->with('success', 'Brand created successfully.');
         } catch (\Exception $e) {
             Log::error('Brand Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create brand. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create brand. Please try again.');
         }
     }
@@ -66,9 +72,15 @@ class BrandController extends Controller
                 $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
             }
             $brand->update($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Brand updated successfully.']);
+            }
             return redirect()->route('brands.index')->with('success', 'Brand updated successfully.');
         } catch (\Exception $e) {
             Log::error('Brand Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update brand. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to update brand. Please try again.');
         }
     }

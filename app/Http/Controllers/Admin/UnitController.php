@@ -48,9 +48,15 @@ class UnitController extends Controller
             $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
 
             Unit::create($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Unit created successfully.']);
+            }
             return redirect()->route('units.index')->with('success', 'Unit created successfully.');
         } catch (\Exception $e) {
             Log::error('Unit Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create unit. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create unit. Please try again.');
         }
     }
@@ -76,9 +82,15 @@ class UnitController extends Controller
                 $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
             }
             $unit->update($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Unit updated successfully.']);
+            }
             return redirect()->route('units.index')->with('success', 'Unit updated successfully.');
         } catch (\Exception $e) {
             Log::error('Unit Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update unit. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to update unit. Please try again.');
         }
     }

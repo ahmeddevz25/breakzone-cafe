@@ -53,9 +53,15 @@ class StoreController extends Controller
             $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
 
             Store::create($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Store created successfully.']);
+            }
             return redirect()->route('stores.index')->with('success', 'Store created successfully.');
         } catch (\Exception $e) {
             Log::error('Store Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create store. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create store. Please try again.');
         }
     }
@@ -88,9 +94,15 @@ class StoreController extends Controller
                 $data['status'] = ($status === 'ACTIVE' || $status === '1' || $status === 'A') ? 'A' : 'I';
             }
             $store->update($data);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Store updated successfully.']);
+            }
             return redirect()->route('stores.index')->with('success', 'Store updated successfully.');
         } catch (\Exception $e) {
             Log::error('Store Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update store. Please try again.'], 500);
+            }
             return redirect()->back()->with('error', 'Failed to update store. Please try again.');
         }
     }

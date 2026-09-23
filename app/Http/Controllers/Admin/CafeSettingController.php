@@ -43,6 +43,10 @@ class CafeSettingController extends Controller
         // Clear the cache so that the updated logo and other settings reflect immediately
         \Illuminate\Support\Facades\Cache::forget('cafe_setting');
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['status' => true, 'message' => 'Cafe settings updated successfully.']);
+        }
+
         return redirect()->back()->with('success', 'Cafe settings updated successfully.');
     }
 }

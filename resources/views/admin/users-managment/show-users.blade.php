@@ -36,10 +36,10 @@
                             </thead>
                             <tbody>
                                 @forelse ($users as $key => $user)
-                                    <tr>
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold text-dark">{{ $user->name }}</td>
-                                        <td class="text-dark">{{ $user->email }}</td>
+                                    <tr class="text-dark">
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $user->name }}</td>
+                                        <td class="text-dark fw-medium">{{ $user->email }}</td>
                                         
                                         {{-- School(s) --}}
                                         <td>
@@ -103,9 +103,9 @@
                                         </td>
 
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="table-actions">
                                                 {{-- Detail Action --}}
-                                                <a href="javascript:void(0);" class="text-info fs-5 viewDetailBtn"
+                                                <a href="javascript:void(0);" class="action-btn action-btn-view viewDetailBtn"
                                                     title="View Details"
                                                     data-name="{{ $user->name }}"
                                                     data-email="{{ $user->email }}"
@@ -118,7 +118,7 @@
                                                 </a>
 
                                                 @can('user edit')
-                                                    <a href="javascript:void(0);" class="text-primary fs-5 editUserBtn"
+                                                    <a href="javascript:void(0);" class="action-btn action-btn-edit editUserBtn"
                                                         title="Edit User"
                                                         data-id="{{ $user->id }}" data-name="{{ $user->name }}"
                                                         data-email="{{ $user->email }}"
@@ -135,7 +135,7 @@
                                                     <a href="{{ route('users.destroy', $user->id) }}"
                                                         title="Delete User"
                                                         onclick="return confirm('Are you sure you want to delete this user?')"
-                                                        class="text-danger fs-5">
+                                                        class="action-btn action-btn-delete">
                                                         <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan

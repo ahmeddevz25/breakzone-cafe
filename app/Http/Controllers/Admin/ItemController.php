@@ -54,7 +54,6 @@ class ItemController extends Controller
             'price' => 'nullable|numeric|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'sale_price' => 'required|numeric|min:0',
-            'stock' => 'nullable|numeric|min:0',
             'details' => 'nullable|string',
             'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'status' => 'required',
@@ -62,10 +61,10 @@ class ItemController extends Controller
         ]);
 
         try {
-            $data = $request->except(['picture']);
+            $data = $request->except(['picture', 'stock']);
             $data['price'] = $request->input('price') ?? $request->input('purchase_price') ?? 0;
             $data['sale_price'] = $request->input('sale_price') ?? 0;
-            $data['stock'] = $request->input('stock') ?? 0;
+            $data['stock'] = 0;
             $data['position'] = $request->input('position') ?? 0;
             $data['details'] = $request->input('details') ?? '';
 
@@ -84,9 +83,15 @@ class ItemController extends Controller
 
             Item::create($data);
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Item created successfully.']);
+            }
             return redirect()->route('items.index')->with('success', 'Item created successfully.');
         } catch (\Exception $e) {
             Log::error('Item Create Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to create item. ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->withInput()->with('error', 'Failed to create item. ' . $e->getMessage());
         }
     }
@@ -103,7 +108,6 @@ class ItemController extends Controller
             'price' => 'nullable|numeric|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'sale_price' => 'required|numeric|min:0',
-            'stock' => 'nullable|numeric|min:0',
             'details' => 'nullable|string',
             'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'status' => 'required',
@@ -112,11 +116,10 @@ class ItemController extends Controller
 
         try {
             $item = Item::findOrFail($id);
-            $data = $request->except(['picture']);
+            $data = $request->except(['picture', 'stock']);
 
             $data['price'] = $request->input('price') ?? $request->input('purchase_price') ?? 0;
             $data['sale_price'] = $request->input('sale_price') ?? 0;
-            $data['stock'] = $request->input('stock') ?? 0;
             $data['position'] = $request->input('position') ?? 0;
             $data['details'] = $request->input('details') ?? '';
 
@@ -136,9 +139,15 @@ class ItemController extends Controller
 
             $item->update($data);
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Item updated successfully.']);
+            }
             return redirect()->route('items.index')->with('success', 'Item updated successfully.');
         } catch (\Exception $e) {
             Log::error('Item Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to update item. ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->withInput()->with('error', 'Failed to update item. ' . $e->getMessage());
         }
     }

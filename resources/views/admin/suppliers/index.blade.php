@@ -35,10 +35,10 @@
                             <tbody>
                                 @forelse ($suppliers as $key => $supplier)
                                     <tr class="text-dark">
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold text-dark">{{ $supplier->name }}</td>
-                                        <td class="text-dark">{{ $supplier->company }}</td>
-                                        <td class="text-dark">{{ $supplier->mobile }}</td>
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $supplier->name }}</td>
+                                        <td class="text-dark fw-medium">{{ $supplier->company }}</td>
+                                        <td class="text-dark fw-medium">{{ $supplier->mobile }}</td>
                                         <td>
                                             @if ($supplier->status == 'A' || $supplier->status == 'active' || $supplier->status === '1' || $supplier->status === 1)
                                                 <span class="badge bg-success">Active</span>
@@ -47,9 +47,10 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="table-actions">
+                                                {{-- View Details --}}
                                                 <button type="button" title="View Details"
-                                                    class="btn btn-link text-info fs-5 p-0 view-supplier-btn"
+                                                    class="action-btn action-btn-view view-supplier-btn"
                                                     data-name="{{ $supplier->name }}" 
                                                     data-company="{{ $supplier->company }}"
                                                     data-address="{{ $supplier->address }}"
@@ -62,9 +63,10 @@
                                                     <i class='bx bx-show'></i>
                                                 </button>
 
+                                                {{-- Edit --}}
                                                 @can('supplier edit')
                                                     <button type="button" title="Edit"
-                                                        class="btn btn-link text-primary fs-5 p-0 edit-supplier-btn"
+                                                        class="action-btn action-btn-edit edit-supplier-btn"
                                                         data-id="{{ $supplier->id }}" 
                                                         data-name="{{ $supplier->name }}" 
                                                         data-company="{{ $supplier->company }}"
@@ -79,10 +81,11 @@
                                                     </button>
                                                 @endcan
 
+                                                {{-- Delete --}}
                                                 @can('supplier delete')
                                                     <a href="{{ route('suppliers.delete', $supplier->id) }}" title="Delete"
                                                         onclick="return confirm('Are you sure you want to delete this supplier?')"
-                                                        class="text-danger fs-5">
+                                                        class="action-btn action-btn-delete">
                                                         <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan
@@ -91,59 +94,68 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">No suppliers available.</td>
+                                        <td colspan="6" class="text-center text-muted py-4">No suppliers available.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Unified Supplier Modal -->
+                    <!-- Unified Supplier Modal (Add / Edit) -->
                     <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
                                 <form id="supplierForm" action="{{ route('suppliers.store') }}" method="POST">
                                     @csrf
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="supplierModalLabel">Add New Supplier</h5>
+                                    <div class="modal-header border-bottom py-3">
+                                        <h5 class="modal-title fw-bold" id="supplierModalLabel">Add New Supplier</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
-                                    <div class="modal-body">
+                                    <div class="modal-body p-4">
                                         <div class="row g-3">
                                             {{-- Name --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">Name <span class="text-danger">*</span></label>
-                                                <input type="text" name="name" id="supplierName" class="form-control" required>
+                                                <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                                                <input type="text" name="name" id="supplierName" class="form-control" placeholder="Supplier Name" required>
                                             </div>
 
                                             {{-- Company --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">Company <span class="text-danger">*</span></label>
-                                                <input type="text" name="company" id="supplierCompany" class="form-control" required>
+                                                <label class="form-label fw-semibold">Company <span class="text-danger">*</span></label>
+                                                <input type="text" name="company" id="supplierCompany" class="form-control" placeholder="Company Name" required>
                                             </div>
 
                                             {{-- Mobile --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">Mobile <span class="text-danger">*</span></label>
-                                                <input type="text" name="mobile" id="supplierMobile" class="form-control" required>
+                                                <label class="form-label fw-semibold">Mobile <span class="text-danger">*</span></label>
+                                                <input type="tel" name="mobile" id="supplierMobile" class="form-control" 
+                                                    placeholder="e.g. 03001234567" 
+                                                    inputmode="tel" 
+                                                    pattern="[0-9+\-\s()]{7,25}"
+                                                    oninput="this.value = this.value.replace(/[^0-9+\-\s()]/g, '')" 
+                                                    required>
                                             </div>
 
                                             {{-- NTN --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">NTN #</label>
-                                                <input type="text" name="ntn_no" id="supplierNtn" class="form-control">
+                                                <label class="form-label fw-semibold">NTN #</label>
+                                                <input type="text" name="ntn_no" id="supplierNtn" class="form-control" 
+                                                    placeholder="e.g. 1234567-8" 
+                                                    inputmode="numeric" 
+                                                    pattern="[0-9\-]{5,20}"
+                                                    oninput="this.value = this.value.replace(/[^0-9\-]/g, '')">
                                             </div>
 
                                             {{-- Email Address --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">Email Address</label>
-                                                <input type="email" name="email" id="supplierEmail" class="form-control">
+                                                <label class="form-label fw-semibold">Email Address</label>
+                                                <input type="email" name="email" id="supplierEmail" class="form-control" placeholder="email@domain.com">
                                             </div>
 
                                             {{-- Status --}}
                                             <div class="col-md-6">
-                                                <label class="form-label">Status <span class="text-danger">*</span></label>
+                                                <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
                                                 <select name="status" id="supplierStatus" class="form-select" required>
                                                     <option value="A">Active</option>
                                                     <option value="I">Inactive</option>
@@ -152,15 +164,15 @@
 
                                             {{-- Address --}}
                                             <div class="col-12">
-                                                <label class="form-label">Address</label>
-                                                <input type="text" name="address" id="supplierAddress" class="form-control">
+                                                <label class="form-label fw-semibold">Address</label>
+                                                <input type="text" name="address" id="supplierAddress" class="form-control" placeholder="Office / Shop Address">
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Clear</button>
-                                        <button type="submit" id="submitBtn" class="btn btn-primary bg-dark border-dark">Save Supplier</button>
+                                    <div class="modal-footer border-top py-3">
+                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary px-4">Save Supplier</button>
                                     </div>
                                 </form>
                             </div>
@@ -169,14 +181,22 @@
 
                     <!-- View Supplier Modal -->
                     <div class="modal fade" id="viewSupplierModal" tabindex="-1" aria-labelledby="viewSupplierModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
-                                <div class="modal-header border-bottom">
-                                    <h5 class="modal-title" id="viewSupplierModalLabel">Supplier Details</h5>
+                                <div class="modal-header bg-light border-bottom py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar avatar-md bg-label-primary rounded p-2 d-flex align-items-center justify-content-center">
+                                            <i class='bx bx-group fs-3 text-primary'></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="modal-title fw-bold mb-0 text-dark" id="v_supplier_title">Supplier Details</h5>
+                                            <small class="text-muted">Supplier Information</small>
+                                        </div>
+                                    </div>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body p-4">
-                                    <table class="table table-bordered table-striped">
+                                    <table class="table table-bordered table-striped mb-0">
                                         <tbody>
                                             <tr>
                                                 <th style="width: 35%;">Name</th>
@@ -209,12 +229,13 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="modal-footer border-top">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <div class="modal-footer border-top py-3 bg-light">
+                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -243,9 +264,10 @@
                 modalTitle.textContent = 'Add New Supplier';
                 submitBtn.textContent = 'Save Supplier';
                 supplierForm.reset();
-                supplierStatus.value = "A"; // Default to Active (A)
+                supplierStatus.value = "A";
             };
 
+            // Edit Supplier
             document.querySelectorAll('.edit-supplier-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -262,7 +284,6 @@
                         status = "I";
                     }
 
-                    // Update form action for editing
                     supplierForm.action = `/suppliers/${id}/update`;
                     modalTitle.textContent = 'Edit Supplier';
                     submitBtn.textContent = 'Update Supplier';
@@ -277,9 +298,12 @@
                 });
             });
 
+            // View Supplier
             document.querySelectorAll('.view-supplier-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    document.getElementById('v_name').textContent = this.dataset.name || 'N/A';
+                    const name = this.dataset.name || 'N/A';
+                    document.getElementById('v_supplier_title').textContent = name;
+                    document.getElementById('v_name').textContent = name;
                     document.getElementById('v_company').textContent = this.dataset.company || 'N/A';
                     document.getElementById('v_mobile').textContent = this.dataset.mobile || 'N/A';
                     document.getElementById('v_email').textContent = this.dataset.email || 'N/A';

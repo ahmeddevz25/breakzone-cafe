@@ -38,13 +38,13 @@
                             <tbody>
                                 @forelse ($items as $key => $item)
                                     <tr class="text-dark">
-                                        <td>{{ $key + 1 }}</td>
-                                        <td class="fw-semibold text-dark">{{ $item->name }}</td>
-                                        <td><span class="font-monospace">{{ $item->code }}</span></td>
-                                        <td>{!! $item->category ? $item->category->full_path : '-' !!}</td>
-                                        <td>{{ number_format($item->stock ?? 0, 2) }}</td>
-                                        <td>{{ number_format($item->price, 2) }}</td>
-                                        <td>{{ number_format($item->sale_price, 2) }}</td>
+                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
+                                        <td class="fw-bold text-dark">{{ $item->name }}</td>
+                                        <td class="text-dark font-monospace fw-medium">{{ $item->code }}</td>
+                                        <td class="text-dark fw-medium">{!! $item->category ? $item->category->full_path : '-' !!}</td>
+                                        <td class="text-dark fw-medium">{{ number_format($item->stock ?? 0, 2) }}</td>
+                                        <td class="text-dark fw-medium">{{ number_format($item->price, 2) }}</td>
+                                        <td class="text-dark fw-bold">{{ number_format($item->sale_price, 2) }}</td>
                                         <td>
                                             @if ($item->status == 'A' || $item->status == 'active' || $item->status === '1' || $item->status === 1)
                                                 <span class="badge bg-success">Active</span>
@@ -53,10 +53,10 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <div class="table-actions">
                                                 {{-- View Details (Eye Icon) --}}
                                                 <button type="button" title="View Details"
-                                                    class="btn btn-link text-info fs-5 p-0 view-item-btn"
+                                                    class="action-btn action-btn-view view-item-btn"
                                                     data-name="{{ $item->name }}"
                                                     data-store="{{ $item->store->store ?? $item->store->name ?? '-' }}"
                                                     data-category="{!! $item->category ? $item->category->full_path : '-' !!}"
@@ -71,13 +71,13 @@
                                                     data-status="{{ $item->status }}"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#viewItemModal">
-                                                    <i class='bx bx-show text-info'></i>
+                                                    <i class='bx bx-show'></i>
                                                 </button>
 
                                                 {{-- Edit Item --}}
                                                 @can('item edit')
                                                     <button type="button" title="Edit"
-                                                        class="btn btn-link text-primary fs-5 p-0 edit-item-btn"
+                                                        class="action-btn action-btn-edit edit-item-btn"
                                                         data-id="{{ $item->id }}"
                                                         data-name="{{ $item->name }}"
                                                         data-store_id="{{ $item->store_id }}"
@@ -94,7 +94,7 @@
                                                         data-position="{{ $item->position }}"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#itemModal">
-                                                        <i class='bx bx-edit text-primary'></i>
+                                                        <i class='bx bx-edit'></i>
                                                     </button>
                                                 @endcan
 
@@ -102,8 +102,8 @@
                                                 @can('item delete')
                                                     <a href="{{ route('items.delete', $item->id) }}" title="Delete"
                                                         onclick="return confirm('Are you sure you want to delete this item?')"
-                                                        class="text-danger fs-5">
-                                                        <i class='bx bx-trash text-danger'></i>
+                                                        class="action-btn action-btn-delete">
+                                                        <i class='bx bx-trash'></i>
                                                     </a>
                                                 @endcan
                                             </div>
@@ -191,23 +191,18 @@
                                                 </select>
                                             </div>
 
-                                            {{-- Row 3: Pricing, Stock & Status (4 columns) --}}
-                                            <div class="col-md-3">
+                                            {{-- Row 3: Pricing & Status (3 columns) --}}
+                                            <div class="col-md-4">
                                                 <label class="form-label fw-semibold">Purchase Price <span class="text-danger">*</span></label>
                                                 <input type="number" step="any" min="0" name="price" id="itemPrice" class="form-control" value="0" required>
                                             </div>
 
-                                            <div class="col-md-3">
+                                            <div class="col-md-4">
                                                 <label class="form-label fw-semibold">Sale Price <span class="text-danger">*</span></label>
                                                 <input type="number" step="any" min="0" name="sale_price" id="itemSalePrice" class="form-control" value="0" required>
                                             </div>
 
-                                            <div class="col-md-3">
-                                                <label class="form-label fw-semibold">Minimum Stock (in hand)</label>
-                                                <input type="number" step="any" min="0" name="stock" id="itemStock" class="form-control" value="0">
-                                            </div>
-
-                                            <div class="col-md-3">
+                                            <div class="col-md-4">
                                                 <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
                                                 <select name="status" id="itemStatus" class="form-select" required>
                                                     <option value="A">Active</option>
@@ -237,8 +232,8 @@
                                     </div>
 
                                     <div class="modal-footer border-top py-3">
-                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Clear</button>
-                                        <button type="submit" id="submitBtn" class="btn btn-primary bg-dark border-dark px-4">Save Item</button>
+                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary px-4">Save Item</button>
                                     </div>
                                 </form>
                             </div>
@@ -261,6 +256,7 @@
                                             </div>
                                             <div id="v_status"></div>
                                         </div>
+                                        
                                         <div class="col-md-8 ps-md-3">
                                             <table class="table table-bordered table-striped table-sm mb-0">
                                                 <tbody>
@@ -309,15 +305,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="modal-footer border-top py-2">
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                <div class="modal-footer border-top py-3 bg-light">
+                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
                                 </div>
+                            </div>
+                        </div>
                     </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="layout-overlay layout-menu-toggle"></div>
 
@@ -335,7 +328,6 @@
             const itemBrand = document.getElementById('itemBrand');
             const itemPrice = document.getElementById('itemPrice');
             const itemSalePrice = document.getElementById('itemSalePrice');
-            const itemStock = document.getElementById('itemStock');
             const itemDetails = document.getElementById('itemDetails');
             const itemPicture = document.getElementById('itemPicture');
             const itemStatus = document.getElementById('itemStatus');
@@ -368,7 +360,6 @@
 
                 itemPrice.value = "0";
                 itemSalePrice.value = "0";
-                itemStock.value = "0";
                 itemPosition.value = "0";
                 itemStatus.value = "A";
 
@@ -414,7 +405,6 @@
                     itemBrand.value = brandId || '';
                     itemPrice.value = price || '0';
                     itemSalePrice.value = salePrice || '0';
-                    itemStock.value = stock || '0';
                     itemDetails.value = details || '';
                     itemStatus.value = status;
                     itemPosition.value = position || '0';
