@@ -17,14 +17,144 @@ class SupplierController extends Controller
         $this->middleware('permission:supplier delete')->only('destroy');
     }
 
-    public function index()
+    public function index(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+            return $this->getSuppliersDataAjax($request);
+        }
+
+        return view('admin.suppliers.index');
+    }
+
+    public function getSuppliersDataAjax(Request $request)
     {
         try {
-            $suppliers = Supplier::orderBy('id', 'asc')->get();
-            return view('admin.suppliers.index', compact('suppliers'));
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+            $searchValue = $request->input('search.value');
+            $statusFilter = $request->input('status_filter');
+
+            $recordsTotal = Supplier::count();
+
+            $query = Supplier::query();
+
+            // Custom Status Filter
+            if (!empty($statusFilter)) {
+                $query->where('status', $statusFilter);
+            }
+
+            // Global Search Filter
+            if (!empty($searchValue)) {
+                $query->where(function ($q) use ($searchValue) {
+                    $q->where('name', 'like', "%{$searchValue}%")
+                      ->orWhere('company', 'like', "%{$searchValue}%")
+                      ->orWhere('mobile', 'like', "%{$searchValue}%")
+                      ->orWhere('email', 'like', "%{$searchValue}%")
+                      ->orWhere('ntn_no', 'like', "%{$searchValue}%");
+
+                    if (stripos('Active', $searchValue) !== false) {
+                        $q->orWhere('status', 'A');
+                    } elseif (stripos('Inactive', $searchValue) !== false) {
+                        $q->orWhere('status', 'I');
+                    }
+                });
+            }
+
+            $recordsFiltered = $query->count();
+
+            $query->orderBy('id', 'asc');
+
+            if ($length > 0) {
+                $query->skip($start)->take($length);
+            }
+
+            $suppliers = $query->get();
+
+            $user = auth()->user();
+            $canEdit = $user ? $user->can('supplier edit') : true;
+            $canDelete = $user ? $user->can('supplier delete') : true;
+
+            $data = [];
+            foreach ($suppliers as $key => $supplier) {
+                $rowIndex = $start + $key + 1;
+                $name = e($supplier->name ?? '');
+                $company = e($supplier->company ?? '');
+                $mobile = e($supplier->mobile ?? '');
+                $ntn = e($supplier->ntn_no ?? $supplier->ntn ?? '');
+                $address = e($supplier->address ?? '');
+                $email = e($supplier->email ?? '');
+
+                $statusVal = strtoupper(trim($supplier->status ?? ''));
+                if ($statusVal === 'A' || $statusVal === 'ACTIVE' || $statusVal === '1') {
+                    $statusHtml = '<span class="badge bg-success">Active</span>';
+                } else {
+                    $statusHtml = '<span class="badge bg-danger">Inactive</span>';
+                }
+
+                $actionsHtml = '<div class="table-actions justify-content-center">';
+                
+                // View details
+                $actionsHtml .= '<button type="button" title="View Details" class="action-btn action-btn-view view-supplier-btn" '
+                    . 'data-name="' . $name . '" '
+                    . 'data-company="' . $company . '" '
+                    . 'data-address="' . $address . '" '
+                    . 'data-mobile="' . $mobile . '" '
+                    . 'data-ntn="' . $ntn . '" '
+                    . 'data-email="' . $email . '" '
+                    . 'data-status="' . e($supplier->status ?? 'A') . '">'
+                    . '<i class="bx bx-show"></i>'
+                    . '</button>';
+
+                if ($canEdit) {
+                    $actionsHtml .= '<button type="button" title="Edit" class="action-btn action-btn-edit edit-supplier-btn" '
+                        . 'data-id="' . $supplier->id . '" '
+                        . 'data-name="' . $name . '" '
+                        . 'data-company="' . $company . '" '
+                        . 'data-address="' . $address . '" '
+                        . 'data-mobile="' . $mobile . '" '
+                        . 'data-ntn="' . $ntn . '" '
+                        . 'data-email="' . $email . '" '
+                        . 'data-status="' . e($supplier->status ?? 'A') . '" '
+                        . 'data-bs-toggle="modal" data-bs-target="#supplierModal">'
+                        . '<i class="bx bx-edit"></i>'
+                        . '</button>';
+                }
+
+                if ($canDelete) {
+                    $actionsHtml .= '<button type="button" title="Delete" class="action-btn action-btn-delete delete-supplier-ajax-btn" '
+                        . 'data-url="' . route('suppliers.delete', $supplier->id) . '" '
+                        . 'data-name="' . $name . '">'
+                        . '<i class="bx bx-trash"></i>'
+                        . '</button>';
+                }
+                $actionsHtml .= '</div>';
+
+                $data[] = [
+                    'index' => '<span class="text-dark fw-medium">' . $rowIndex . '</span>',
+                    'name' => '<span class="fw-bold text-dark">' . $name . '</span>',
+                    'company' => '<span class="text-dark fw-medium">' . ($company ?: 'N/A') . '</span>',
+                    'mobile' => '<span class="text-dark font-monospace">' . ($mobile ?: 'N/A') . '</span>',
+                    'status' => $statusHtml,
+                    'actions' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
         } catch (\Exception $e) {
-            Log::error('Supplier Index Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Something went wrong while fetching suppliers.');
+            Log::error('Supplier AJAX Error: ' . $e->getMessage());
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Failed to load supplier data.'
+            ], 500);
         }
     }
 
@@ -110,14 +240,28 @@ class SupplierController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $supplier = Supplier::findOrFail($id);
             $supplier->delete();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'success' => true,
+                    'message' => 'Supplier deleted successfully.'
+                ]);
+            }
             return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier Delete Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'success' => false,
+                    'message' => 'Failed to delete supplier. Please try again.'
+                ], 500);
+            }
             return redirect()->back()->with('error', 'Failed to delete supplier. Please try again.');
         }
     }

@@ -20,70 +20,19 @@
                     </div>
 
 
-                    <!-- Roles Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Roles Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100 mb-0" id="rolesTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>Sr. No</th>
+                                    <th style="width: 50px;" class="text-center">Sr. No</th>
                                     <th>Role Name</th>
                                     <th>Permissions</th>
-                                    <th class="text-center">Actions</th>
+                                    <th class="text-center" style="width: 120px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($roles as $key => $role)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $role->name }}</td>
-                                        <td>
-                                            @if ($role->permissions->isNotEmpty())
-                                                <button type="button" 
-                                                    class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 view-permissions-modal-btn fw-semibold"
-                                                    data-role="{{ $role->name }}"
-                                                    data-permissions='@json($role->permissions->pluck("name"))'
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#viewRolePermissionsModal">
-                                                    <i class="bx bx-shield-quarter"></i>
-                                                    <span>{{ $role->permissions->count() }} Permissions</span>
-                                                    <span class="badge bg-primary text-white rounded-pill ms-1" style="font-size: 10px;">View</span>
-                                                </button>
-                                            @else
-                                                <span class="badge bg-label-secondary text-muted">0 Permissions</span>
-                                            @endif
-                                        </td>
-
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- Edit --}}
-                                                @can('role edit')
-                                                    <button type="button" title="Edit"
-                                                        class="action-btn action-btn-edit edit-role-btn"
-                                                        data-id="{{ $role->id }}" 
-                                                        data-name="{{ $role->name }}" 
-                                                        data-permissions="{{ $role->permissions->pluck('name')->toJson() }}"
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#addRoleModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete --}}
-                                                @can('role delete')
-                                                    <a href="{{ route('roles.delete', $role->id) }}" title="Delete"
-                                                        onclick="return confirm('Are you sure you want to delete this role?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">No roles available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -262,9 +211,47 @@
     </div>
     </div>
     <div class="layout-overlay layout-menu-toggle"></div>
-    </div>
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        $(document).ready(function() {
+            // Roles DataTable (Server-Side AJAX)
+            const dataTable = $('#rolesTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Roles DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'name', name: 'name' },
+                    { data: 'permissions', name: 'permissions' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search roles...",
+                    lengthMenu: "Show _MENU_ entries",
+                    processing: '<div class="d-flex justify-content-center align-items-center py-2 text-primary"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading roles...</div>',
+                    emptyTable: '<div class="text-center text-muted py-4"><i class="bx bx-shield fs-2 d-block mb-1"></i> No roles found</div>',
+                    zeroRecords: '<div class="text-center text-muted py-4"><i class="bx bx-search-alt fs-2 d-block mb-1"></i> No matching roles found</div>',
+                    info: "Showing _START_ to _END_ of _TOTAL_ roles",
+                    infoEmpty: "Showing 0 to 0 of 0 roles",
+                    infoFiltered: "(filtered from _MAX_ total roles)"
+                }
+            });
             const selectAll = document.getElementById('select_all_permissions');
             const childChecks = Array.from(document.querySelectorAll('.permission-checkbox')); // sirf children
             const groupParents = Array.from(document.querySelectorAll('.group-parent')); // base/parent
@@ -345,43 +332,48 @@
                 selectAll.indeterminate = false;
             };
 
-            document.querySelectorAll('.edit-role-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const perms = JSON.parse(this.dataset.permissions);
+            // Delegated Edit Role Modal Handler
+            $(document).on('click', '.edit-role-btn', function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                let perms = [];
+                try {
+                    perms = typeof $(this).data('permissions') === 'string' ? JSON.parse($(this).data('permissions')) : $(this).data('permissions');
+                } catch(e) {
+                    perms = [];
+                }
 
-                    // Update form action for editing
-                    roleForm.action = `/roles/${id}/update`;
-                    modalTitle.textContent = 'Edit Role';
-                    submitBtn.textContent = 'Update Role';
-                    roleNameInput.value = name;
+                // Update form action for editing
+                roleForm.action = `/roles/${id}/update`;
+                modalTitle.textContent = 'Edit Role';
+                submitBtn.textContent = 'Update Role';
+                roleNameInput.value = name;
 
-                    // Uncheck all first
-                    childChecks.forEach(cb => cb.checked = false);
-                    groupParents.forEach(p => {
-                        p.checked = false;
-                        p.indeterminate = false;
-                    });
-
-                    // Check assigned permissions (both children and parent)
-                    perms.forEach(pName => {
-                        const cb = document.querySelector(`.permission-checkbox[value="${pName}"]`);
-                        if(cb) cb.checked = true;
-                        const parent = document.querySelector(`.group-parent[value="${pName}"]`);
-                        if(parent) parent.checked = true;
-                    });
-
-                    // Trigger update to fix parents and select all checkboxes
-                    groupParents.forEach(p => updateGroupParent(p.dataset.group));
-                    updateSelectAll();
+                // Uncheck all first
+                childChecks.forEach(cb => cb.checked = false);
+                groupParents.forEach(p => {
+                    p.checked = false;
+                    p.indeterminate = false;
                 });
+
+                // Check assigned permissions (both children and parent)
+                perms.forEach(pName => {
+                    const cb = document.querySelector(`.permission-checkbox[value="${pName}"]`);
+                    if(cb) cb.checked = true;
+                    const parent = document.querySelector(`.group-parent[value="${pName}"]`);
+                    if(parent) parent.checked = true;
+                });
+
+                // Trigger update to fix parents and select all checkboxes
+                groupParents.forEach(p => updateGroupParent(p.dataset.group));
+                updateSelectAll();
             });
 
             // View Role Permissions Modal event delegation (works with DataTables pagination)
             document.addEventListener('click', function(e) {
                 const btn = e.target.closest('.view-permissions-modal-btn');
                 if (!btn) return;
+                btn.blur();
 
                 const roleName = btn.dataset.role || '';
                 let permissions = [];
@@ -429,6 +421,52 @@
                 };
             });
 
+            $('#viewRolePermissionsModal').on('hidden.bs.modal', function () {
+                if (document.activeElement) {
+                    document.activeElement.blur();
+                }
+            });
+
+            // Delegated AJAX Delete Role
+            $(document).on('click', '.delete-role-ajax-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this role';
+
+                Swal.fire({
+                    title: 'Delete Role?',
+                    text: `Are you sure you want to delete role "${name}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'Role has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete role.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
         });
     </script>
+@endpush
 @endsection

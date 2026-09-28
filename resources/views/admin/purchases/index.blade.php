@@ -19,12 +19,12 @@
                         @endcan
                     </div>
 
-                    <!-- Purchases Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top mb-0" id="example">
+                    <!-- Purchases Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100 mb-0" id="purchasesTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 50px;" class="text-center">#</th>
                                     <th>PO / Invoice #</th>
                                     <th>Store</th>
                                     <th>Supplier</th>
@@ -35,65 +35,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($purchases as $key => $p)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td>
-                                            <span class="badge bg-label-dark font-monospace fs-7 px-2 py-1">
-                                                {{ $p->po_no ?? 'PO-' . str_pad($p->id, 4, '0', STR_PAD_LEFT) }}
-                                            </span>
-                                        </td>
-                                        <td class="fw-semibold text-dark">
-                                            {{ $p->store ? ($p->store->store ?? $p->store->name) : '-' }}
-                                        </td>
-                                        <td class="text-dark fw-medium">
-                                            {{ $p->supplier ? $p->supplier->name : '-' }}
-                                        </td>
-                                        <td class="text-dark">
-                                            {{ $p->purchase_date ? $p->purchase_date->format('Y-m-d') : '-' }}
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-label-primary rounded-pill px-2">
-                                                {{ $p->details ? $p->details->count() : 0 }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end fw-bold text-success fs-6">
-                                            Rs {{ number_format($p->total, 2) }}
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="table-actions justify-content-center">
-                                                {{-- View Details --}}
-                                                <button type="button" class="action-btn action-btn-view view-purchase-btn"
-                                                    data-id="{{ $p->id }}" title="View Purchase Details"
-                                                    data-bs-toggle="modal" data-bs-target="#viewPurchaseModal">
-                                                    <i class="bx bx-show"></i>
-                                                </button>
-
-                                                {{-- Edit --}}
-                                                @can('purchase edit')
-                                                    <button type="button" class="action-btn action-btn-edit edit-purchase-btn"
-                                                        data-id="{{ $p->id }}" title="Edit Purchase"
-                                                        data-bs-toggle="modal" data-bs-target="#purchaseModal">
-                                                        <i class="bx bx-edit"></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete --}}
-                                                @can('purchase delete')
-                                                    <a href="{{ route('purchases.delete', $p->id) }}"
-                                                        onclick="return confirm('Are you sure you want to delete this purchase? Associated stock increments will be reverted.')"
-                                                        class="action-btn action-btn-delete" title="Delete Purchase">
-                                                        <i class="bx bx-trash"></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">No purchases recorded yet.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -347,8 +289,51 @@
         </select>
     </div>
 
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        $(document).ready(function() {
+            // Purchases DataTable (Server-Side AJAX)
+            const dataTable = $('#purchasesTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Purchases DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'po_no', name: 'po_no' },
+                    { data: 'store', name: 'store' },
+                    { data: 'supplier', name: 'supplier' },
+                    { data: 'purchase_date', name: 'purchase_date' },
+                    { data: 'items', name: 'items', className: 'text-center' },
+                    { data: 'total', name: 'total', className: 'text-end' },
+                    { data: 'options', name: 'options', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search PO, store, supplier...",
+                    lengthMenu: "Show _MENU_ entries",
+                    processing: '<div class="d-flex justify-content-center align-items-center py-2 text-primary"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading purchases...</div>',
+                    emptyTable: '<div class="text-center text-muted py-4"><i class="bx bx-cart fs-2 d-block mb-1"></i> No purchases found</div>',
+                    zeroRecords: '<div class="text-center text-muted py-4"><i class="bx bx-search-alt fs-2 d-block mb-1"></i> No matching purchases found</div>',
+                    info: "Showing _START_ to _END_ of _TOTAL_ purchases",
+                    infoEmpty: "Showing 0 to 0 of 0 purchases",
+                    infoFiltered: "(filtered from _MAX_ total purchases)"
+                }
+            });
             const purchaseForm = document.getElementById('purchaseForm');
             const defaultStoreRoute = "{{ route('purchases.store') }}";
             const purchaseModalLabel = document.getElementById('purchaseModalLabel');
@@ -592,104 +577,140 @@
                 renumberRows();
             }
 
-            // Edit Purchase Click
-            document.querySelectorAll('.edit-purchase-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const purchaseId = this.dataset.id;
+            // Delegated Edit Purchase Click
+            $(document).on('click', '.edit-purchase-btn', function() {
+                const purchaseId = $(this).data('id');
 
-                    fetch(`/purchases/${purchaseId}/edit-data`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.status || !data.purchase) return;
+                fetch(`/purchases/${purchaseId}/edit-data`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.status || !data.purchase) return;
 
-                            const p = data.purchase;
-                            purchaseForm.action = `/purchases/${p.id}/update`;
-                            submitPurchaseBtn.textContent = 'Update Purchase';
-                            purchaseModalLabel.textContent = `Edit Purchase (${p.po_no})`;
+                        const p = data.purchase;
+                        purchaseForm.action = `/purchases/${p.id}/update`;
+                        submitPurchaseBtn.textContent = 'Update Purchase';
+                        purchaseModalLabel.textContent = `Edit Purchase (${p.po_no})`;
 
-                            purchaseStore.value = p.store_id || '';
-                            purchaseSupplier.value = p.supplier_id || '';
-                            purchaseDate.value = p.purchase_date || '';
-                            purchasePoNo.value = p.po_no || '';
-                            purchaseNotes.value = p.notes || '';
+                        purchaseStore.value = p.store_id || '';
+                        purchaseSupplier.value = p.supplier_id || '';
+                        purchaseDate.value = p.purchase_date || '';
+                        purchasePoNo.value = p.po_no || '';
+                        purchaseNotes.value = p.notes || '';
 
-                            // Populate line items
-                            purchaseTableBody.innerHTML = '';
-                            if (p.items && p.items.length > 0) {
-                                p.items.forEach(item => {
-                                    addPurchaseRow(item.type, null, item);
-                                });
-                            } else {
-                                addPurchaseRow('item');
-                            }
-                        })
-                        .catch(err => {
-                            console.error("Error fetching purchase data:", err);
-                        });
-                });
+                        // Populate line items
+                        purchaseTableBody.innerHTML = '';
+                        if (p.items && p.items.length > 0) {
+                            p.items.forEach(item => {
+                                addPurchaseRow(item.type, null, item);
+                            });
+                        } else {
+                            addPurchaseRow('item');
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error fetching purchase data:", err);
+                    });
             });
 
-            // View Purchase Details Modal
-            document.querySelectorAll('.view-purchase-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const purchaseId = this.dataset.id;
+            // Delegated View Purchase Details Modal
+            $(document).on('click', '.view-purchase-btn', function() {
+                const purchaseId = $(this).data('id');
 
-                    fetch(`/purchases/${purchaseId}/edit-data`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.status || !data.purchase) return;
+                fetch(`/purchases/${purchaseId}/edit-data`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.status || !data.purchase) return;
 
-                            const p = data.purchase;
-                            document.getElementById('v_po_no').textContent = p.po_no || '-';
-                            document.getElementById('v_store').textContent = p.store_name || '-';
-                            document.getElementById('v_supplier').textContent = p.supplier_name || '-';
-                            document.getElementById('v_date').textContent = p.purchase_date || '-';
+                        const p = data.purchase;
+                        document.getElementById('v_po_no').textContent = p.po_no || '-';
+                        document.getElementById('v_store').textContent = p.store_name || '-';
+                        document.getElementById('v_supplier').textContent = p.supplier_name || '-';
+                        document.getElementById('v_date').textContent = p.purchase_date || '-';
 
-                            const notesContainer = document.getElementById('v_notes_container');
-                            if (p.notes) {
-                                document.getElementById('v_notes').textContent = p.notes;
-                                notesContainer.classList.remove('d-none');
-                            } else {
-                                notesContainer.classList.add('d-none');
-                            }
+                        const notesContainer = document.getElementById('v_notes_container');
+                        if (p.notes) {
+                            document.getElementById('v_notes').textContent = p.notes;
+                            notesContainer.classList.remove('d-none');
+                        } else {
+                            notesContainer.classList.add('d-none');
+                        }
 
-                            const vBody = document.getElementById('v_items_body');
-                            vBody.innerHTML = '';
+                        const vBody = document.getElementById('v_items_body');
+                        vBody.innerHTML = '';
 
-                            let sumQty = 0;
-                            let sumTotal = 0;
+                        let sumQty = 0;
+                        let sumTotal = 0;
 
-                            p.items.forEach((item, idx) => {
-                                sumQty += item.quantity;
-                                sumTotal += item.total_price;
+                        p.items.forEach((item, idx) => {
+                            sumQty += item.quantity;
+                            sumTotal += item.total_price;
 
-                                let badgeClass = 'bg-label-primary';
-                                if (item.type === 'ingredient') badgeClass = 'bg-label-success';
-                                if (item.type === 'food') badgeClass = 'bg-label-warning';
+                            let badgeClass = 'bg-label-primary';
+                            if (item.type === 'ingredient') badgeClass = 'bg-label-success';
+                            if (item.type === 'food') badgeClass = 'bg-label-warning';
 
-                                const tr = document.createElement('tr');
-                                tr.innerHTML = `
-                                    <td class="text-center fw-medium text-dark">${idx + 1}</td>
-                                    <td class="fw-bold text-dark">${item.name}</td>
-                                    <td class="text-center">
-                                        <span class="badge ${badgeClass} text-uppercase">${item.type}</span>
-                                    </td>
-                                    <td class="text-center text-dark">${item.unit_name}</td>
-                                    <td class="text-end fw-semibold text-dark">${item.quantity.toFixed(2)}</td>
-                                    <td class="text-end text-dark">Rs ${item.price.toFixed(2)}</td>
-                                    <td class="text-end fw-bold text-success">Rs ${item.total_price.toFixed(2)}</td>
-                                `;
-                                vBody.appendChild(tr);
-                            });
-
-                            document.getElementById('v_grand_qty').textContent = sumQty.toFixed(2);
-                            document.getElementById('v_grand_total').textContent = 'Rs ' + sumTotal.toFixed(2);
-                        })
-                        .catch(err => {
-                            console.error("Error loading purchase details:", err);
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="text-center fw-medium text-dark">${idx + 1}</td>
+                                <td class="fw-bold text-dark">${item.name}</td>
+                                <td class="text-center">
+                                    <span class="badge ${badgeClass} text-uppercase">${item.type}</span>
+                                </td>
+                                <td class="text-center text-dark">${item.unit_name}</td>
+                                <td class="text-end fw-semibold text-dark">${item.quantity.toFixed(2)}</td>
+                                <td class="text-end text-dark">Rs ${item.price.toFixed(2)}</td>
+                                <td class="text-end fw-bold text-success">Rs ${item.total_price.toFixed(2)}</td>
+                            `;
+                            vBody.appendChild(tr);
                         });
+
+                        document.getElementById('v_grand_qty').textContent = sumQty.toFixed(2);
+                        document.getElementById('v_grand_total').textContent = 'Rs ' + sumTotal.toFixed(2);
+                    })
+                    .catch(err => {
+                        console.error("Error loading purchase details:", err);
+                    });
+            });
+
+            // Delegated AJAX Delete Purchase
+            $(document).on('click', '.delete-purchase-ajax-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this purchase';
+
+                Swal.fire({
+                    title: 'Delete Purchase?',
+                    text: `Are you sure you want to delete purchase "${name}"? Associated stock increments will be reverted.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'Purchase has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete purchase.', 'error');
+                            }
+                        });
+                    }
                 });
             });
         });
     </script>
+@endpush
 @endsection

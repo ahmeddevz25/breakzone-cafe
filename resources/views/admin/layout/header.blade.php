@@ -2,18 +2,27 @@
     id="layout-navbar">
     <style>
         #layout-navbar {
-            width: 100%;
-            margin-left: 0;
+            width: calc(100% - 2rem) !important;
+            margin-left: 1rem !important;
+            margin-right: 1rem !important;
+            margin-top: 0.85rem !important;
+            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
 
         @media (min-width: 1200px) {
             #layout-navbar {
-                width: calc(100% - 20rem);
-                margin-left: 18rem;
+                width: calc(100% - 260px - 2.5rem) !important;
+                margin-left: calc(260px + 1.25rem) !important;
+                margin-right: 1.25rem !important;
+            }
+            html.layout-menu-collapsed #layout-navbar {
+                width: calc(100% - 76px - 2.5rem) !important;
+                margin-left: calc(76px + 1.25rem) !important;
+                margin-right: 1.25rem !important;
             }
         }
     </style>
-    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+    <div class="layout-menu-toggle navbar-nav align-items-center me-3 me-xl-0 d-flex" id="saas-mobile-toggle" style="cursor: pointer;" title="Toggle Sidebar">
         <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
             <i class="bx bx-menu bx-sm"></i>
         </a>

@@ -17,14 +17,116 @@ class UnitController extends Controller
         $this->middleware('permission:unit delete')->only('destroy');
     }
 
-    public function index()
+    public function index(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+            return $this->getUnitsDataAjax($request);
+        }
+
+        return view('admin.units.index');
+    }
+
+    public function getUnitsDataAjax(Request $request)
     {
         try {
-            $units = Unit::orderBy('position', 'asc')->orderBy('id', 'asc')->get();
-            return view('admin.units.index', compact('units'));
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+            $searchValue = $request->input('search.value');
+            $statusFilter = $request->input('status_filter');
+
+            $recordsTotal = Unit::count();
+
+            $query = Unit::query();
+
+            if (!empty($statusFilter)) {
+                $query->where('status', $statusFilter);
+            }
+
+            if (!empty($searchValue)) {
+                $query->where(function ($q) use ($searchValue) {
+                    $q->where('unit', 'like', "%{$searchValue}%");
+
+                    if (stripos('Active', $searchValue) !== false) {
+                        $q->orWhere('status', 'A');
+                    } elseif (stripos('Inactive', $searchValue) !== false) {
+                        $q->orWhere('status', 'I');
+                    }
+                });
+            }
+
+            $recordsFiltered = $query->count();
+
+            $query->orderBy('position', 'asc')->orderBy('id', 'asc');
+
+            if ($length > 0) {
+                $query->skip($start)->take($length);
+            }
+
+            $units = $query->get();
+
+            $user = auth()->user();
+            $canEdit = $user ? $user->can('unit edit') : true;
+            $canDelete = $user ? $user->can('unit delete') : true;
+
+            $data = [];
+            foreach ($units as $key => $unit) {
+                $rowIndex = $start + $key + 1;
+                $unitName = e($unit->unit ?? $unit->name ?? '');
+                $quantity = e($unit->quantity ?? 0);
+
+                $statusVal = strtoupper(trim($unit->status ?? ''));
+                if ($statusVal === 'A' || $statusVal === 'ACTIVE' || $statusVal === '1') {
+                    $statusHtml = '<span class="badge bg-success">Active</span>';
+                } else {
+                    $statusHtml = '<span class="badge bg-danger">Inactive</span>';
+                }
+
+                $actionsHtml = '<div class="table-actions justify-content-center">';
+                if ($canEdit) {
+                    $actionsHtml .= '<button type="button" title="Edit" class="action-btn action-btn-edit edit-unit-btn" '
+                        . 'data-id="' . $unit->id . '" '
+                        . 'data-unit="' . $unitName . '" '
+                        . 'data-quantity="' . $quantity . '" '
+                        . 'data-position="' . e($unit->position ?? 0) . '" '
+                        . 'data-status="' . e($unit->status ?? 'A') . '">'
+                        . '<i class="bx bx-edit"></i>'
+                        . '</button>';
+                }
+
+                if ($canDelete) {
+                    $actionsHtml .= '<button type="button" title="Delete" class="action-btn action-btn-delete delete-unit-ajax-btn" '
+                        . 'data-url="' . route('units.delete', $unit->id) . '" '
+                        . 'data-name="' . $unitName . '">'
+                        . '<i class="bx bx-trash"></i>'
+                        . '</button>';
+                }
+                $actionsHtml .= '</div>';
+
+                $data[] = [
+                    'index' => '<span class="text-dark fw-medium">' . $rowIndex . '</span>',
+                    'unit' => '<span class="fw-bold text-dark">' . $unitName . '</span>',
+                    'quantity' => '<span class="text-dark fw-medium">' . $quantity . '</span>',
+                    'status' => $statusHtml,
+                    'actions' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
         } catch (\Exception $e) {
-            Log::error('Unit Index Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Something went wrong while fetching units.');
+            Log::error('Unit AJAX Error: ' . $e->getMessage());
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Failed to load unit data.'
+            ], 500);
         }
     }
 
@@ -95,14 +197,28 @@ class UnitController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $unit = Unit::findOrFail($id);
             $unit->delete();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'success' => true,
+                    'message' => 'Unit deleted successfully.'
+                ]);
+            }
             return redirect()->route('units.index')->with('success', 'Unit deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Unit Delete Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'success' => false,
+                    'message' => 'Failed to delete unit. Please try again.'
+                ], 500);
+            }
             return redirect()->back()->with('error', 'Failed to delete unit. Please try again.');
         }
     }

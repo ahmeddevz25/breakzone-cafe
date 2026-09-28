@@ -11,142 +11,39 @@
                     <!-- Header -->
                     <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
                         <h5 class="card-title mb-0 text-md-start text-center">All Users</h5>
-                        @can('user add')
-                            <button id="addUserBtn" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                data-bs-target="#userModal">
-                                <i class="bx bx-plus icon-sm"></i>
-                                <span class="d-none d-sm-inline-block">Add User</span>
-                            </button>
-                        @endcan
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="roleFilter" class="form-select form-select-sm" style="width: 150px;">
+                                <option value="">All Roles</option>
+                                @foreach($roles as $r)
+                                    <option value="{{ $r->name }}">{{ $r->name }}</option>
+                                @endforeach
+                            </select>
+                            @can('user add')
+                                <button id="addUserBtn" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#userModal">
+                                    <i class="bx bx-plus icon-sm"></i>
+                                    <span class="d-none d-sm-inline-block">Add User</span>
+                                </button>
+                            @endcan
+                        </div>
                     </div>
 
-                    <!-- Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100 mb-0" id="usersTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>Sr. No</th>
+                                    <th style="width: 50px;" class="text-center">Sr. No</th>
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>School(s)</th>
                                     <th>Store(s)</th>
                                     <th>Roles</th>
-                                    <th class="text-center">Actions</th>
+                                    <th class="text-center" style="width: 120px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($users as $key => $user)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $user->name }}</td>
-                                        <td class="text-dark fw-medium">{{ $user->email }}</td>
-                                        
-                                        {{-- School(s) --}}
-                                        <td>
-                                            @php
-                                                $userSchoolIds = $user->cafe_school_ids;
-                                                $schoolCount = count($userSchoolIds);
-                                                $userSchoolNames = array_values(array_filter(array_map(fn($id) => $schoolsMap[$id] ?? null, $userSchoolIds)));
-                                                $userStoreIds = $user->store_ids;
-                                                $storeCount = count($userStoreIds);
-                                                $userStoreNames = array_values(array_filter(array_map(fn($id) => $storesMap[$id] ?? null, $userStoreIds)));
-                                            @endphp
-                                            @if($schoolCount > 0)
-                                                @if($schoolCount === 1)
-                                                    <span class="badge bg-label-info text-dark border fw-bold">{{ $userSchoolNames[0] ?? 'School #'.$userSchoolIds[0] }}</span>
-                                                @else
-                                                    <span class="badge bg-label-primary text-dark border fw-bold viewDetailBtn"
-                                                        style="cursor: pointer;"
-                                                        title="Click to view details"
-                                                        data-name="{{ $user->name }}"
-                                                        data-email="{{ $user->email }}"
-                                                        data-role="{{ $user->roles->first()->name ?? 'No Role' }}"
-                                                        data-schools="{{ json_encode($userSchoolNames) }}"
-                                                        data-stores="{{ json_encode($userStoreNames) }}"
-                                                        data-bs-toggle="modal" data-bs-target="#userDetailModal">
-                                                        <i class='bx bxs-school me-1'></i> {{ $schoolCount }} Schools
-                                                    </span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted small">N/A</span>
-                                            @endif
-                                        </td>
-
-                                        {{-- Store(s) --}}
-                                        <td>
-                                            @if($storeCount > 0)
-                                                @if($storeCount === 1)
-                                                    <span class="badge bg-label-warning text-dark border fw-bold">{{ $userStoreNames[0] ?? 'Store #'.$userStoreIds[0] }}</span>
-                                                @else
-                                                    <span class="badge bg-label-secondary text-dark border fw-bold viewDetailBtn"
-                                                        style="cursor: pointer;"
-                                                        title="Click to view details"
-                                                        data-name="{{ $user->name }}"
-                                                        data-email="{{ $user->email }}"
-                                                        data-role="{{ $user->roles->first()->name ?? 'No Role' }}"
-                                                        data-schools="{{ json_encode($userSchoolNames) }}"
-                                                        data-stores="{{ json_encode($userStoreNames) }}"
-                                                        data-bs-toggle="modal" data-bs-target="#userDetailModal">
-                                                        <i class='bx bx-store-alt me-1'></i> {{ $storeCount }} Stores
-                                                    </span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted small">N/A</span>
-                                            @endif
-                                        </td>
-
-                                        {{-- Role(s) --}}
-                                        <td>
-                                            @foreach ($user->getRoleNames() as $role)
-                                                <span class="badge bg-primary">{{ $role }}</span>
-                                            @endforeach
-                                        </td>
-
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- Detail Action --}}
-                                                <a href="javascript:void(0);" class="action-btn action-btn-view viewDetailBtn"
-                                                    title="View Details"
-                                                    data-name="{{ $user->name }}"
-                                                    data-email="{{ $user->email }}"
-                                                    data-role="{{ $user->roles->first()->name ?? 'No Role' }}"
-                                                    data-schools="{{ json_encode($userSchoolNames) }}"
-                                                    data-stores="{{ json_encode($userStoreNames) }}"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#userDetailModal">
-                                                    <i class='bx bx-show'></i>
-                                                </a>
-
-                                                @can('user edit')
-                                                    <a href="javascript:void(0);" class="action-btn action-btn-edit editUserBtn"
-                                                        title="Edit User"
-                                                        data-id="{{ $user->id }}" data-name="{{ $user->name }}"
-                                                        data-email="{{ $user->email }}"
-                                                        data-schools="{{ json_encode($userSchoolIds) }}"
-                                                        data-stores="{{ json_encode($userStoreIds) }}"
-                                                        data-role="{{ $user->roles->first()->name ?? '' }}" data-bs-toggle="modal"
-                                                        data-bs-target="#userModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </a>
-                                                @endcan
-
-
-                                                @can('user delete')
-                                                    <a href="{{ route('users.destroy', $user->id) }}"
-                                                        title="Delete User"
-                                                        onclick="return confirm('Are you sure you want to delete this user?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">No users available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -357,9 +254,60 @@
 
     <div class="layout-overlay layout-menu-toggle"></div>
 
+@push('scripts')
     <script>
-        // === Grab form elements ===
-        let form = document.getElementById("userForm");
+        $(document).ready(function() {
+            // Users DataTable (Server-Side AJAX)
+            const dataTable = $('#usersTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.role_filter = $('#roleFilter').val();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Users DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'name', name: 'name' },
+                    { data: 'email', name: 'email' },
+                    { data: 'schools', name: 'schools' },
+                    { data: 'stores', name: 'stores' },
+                    { data: 'roles', name: 'roles' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search users, email, role...",
+                    lengthMenu: "Show _MENU_ entries",
+                    processing: '<div class="d-flex justify-content-center align-items-center py-2 text-primary"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading users...</div>',
+                    emptyTable: '<div class="text-center text-muted py-4"><i class="bx bx-user fs-2 d-block mb-1"></i> No users found</div>',
+                    zeroRecords: '<div class="text-center text-muted py-4"><i class="bx bx-search-alt fs-2 d-block mb-1"></i> No matching users found</div>',
+                    info: "Showing _START_ to _END_ of _TOTAL_ users",
+                    infoEmpty: "Showing 0 to 0 of 0 users",
+                    infoFiltered: "(filtered from _MAX_ total users)"
+                }
+            });
+
+            $('#roleFilter').on('change', function() {
+                dataTable.ajax.reload();
+            });
+
+            // === Grab form elements ===
+            let form = document.getElementById("userForm");
         let formMethod = document.getElementById("formMethod");
         let nameInput = document.getElementById("user_name");
         let emailInput = document.getElementById("user_email");
@@ -482,10 +430,9 @@
             updateSelectedStoreCount();
         });
 
-        // === VIEW USER DETAILS MODAL ===
-        document.querySelectorAll(".viewDetailBtn").forEach(btn => {
-            btn.addEventListener("click", function() {
-                let name = this.dataset.name || "User Details";
+        // === VIEW USER DETAILS MODAL (Delegated for AJAX) ===
+        $(document).on("click", ".viewDetailBtn", function() {
+            let name = this.dataset.name || "User Details";
                 let email = this.dataset.email || "";
                 let role = this.dataset.role || "No Role";
                 let schools = [];
@@ -537,41 +484,39 @@
                     });
                 }
             });
-        });
 
-        // === ADD USER ===
-        document.getElementById("addUserBtn").addEventListener("click", function() {
-            form.action = "{{ route('users.store') }}"; // /users
-            formMethod.innerHTML = "";
+            // === ADD USER ===
+            document.getElementById("addUserBtn").addEventListener("click", function() {
+                form.action = "{{ route('users.store') }}"; // /users
+                formMethod.innerHTML = "";
 
-            nameInput.value = "";
-            emailInput.value = "";
-            roleSelect.value = "";
-            passInput.value = "";
-            passInput.required = true;
+                nameInput.value = "";
+                emailInput.value = "";
+                roleSelect.value = "";
+                passInput.value = "";
+                passInput.required = true;
 
-            // Reset schools
-            document.querySelectorAll('.school-checkbox').forEach(cb => cb.checked = false);
-            schoolSearchInput.value = "";
-            document.querySelectorAll('.school-item').forEach(item => item.style.display = '');
-            updateSelectedSchoolCount();
+                // Reset schools
+                document.querySelectorAll('.school-checkbox').forEach(cb => cb.checked = false);
+                schoolSearchInput.value = "";
+                document.querySelectorAll('.school-item').forEach(item => item.style.display = '');
+                updateSelectedSchoolCount();
 
-            // Reset stores
-            document.querySelectorAll('.store-checkbox').forEach(cb => cb.checked = false);
-            storeSearchInput.value = "";
-            document.querySelectorAll('.store-item').forEach(item => item.style.display = '');
-            updateSelectedStoreCount();
+                // Reset stores
+                document.querySelectorAll('.store-checkbox').forEach(cb => cb.checked = false);
+                storeSearchInput.value = "";
+                document.querySelectorAll('.store-item').forEach(item => item.style.display = '');
+                updateSelectedStoreCount();
 
-            // Reset errors
-            resetValidationErrors();
+                // Reset errors
+                resetValidationErrors();
 
-            modalTitle.textContent = "Add New User";
-            submitBtn.textContent = "Add User";
-        });
+                modalTitle.textContent = "Add New User";
+                submitBtn.textContent = "Add User";
+            });
 
-        // === EDIT USER ===
-        document.querySelectorAll(".editUserBtn").forEach(btn => {
-            btn.addEventListener("click", function() {
+            // === EDIT USER (Delegated for AJAX) ===
+            $(document).on("click", ".editUserBtn", function() {
                 let id = this.dataset.id;
                 let name = this.dataset.name;
                 let email = this.dataset.email;
@@ -621,69 +566,109 @@
                 modalTitle.textContent = "Edit User";
                 submitBtn.textContent = "Update User";
             });
-        });
 
-        // === FORM SUBMIT VALIDATION (Prevents creation without School & Store) ===
-        form.addEventListener("submit", function(e) {
-            let schoolCount = document.querySelectorAll('.school-checkbox:checked').length;
-            let storeCount = document.querySelectorAll('.store-checkbox:checked').length;
+            // === FORM SUBMIT VALIDATION (Prevents creation without School & Store) ===
+            form.addEventListener("submit", function(e) {
+                let schoolCount = document.querySelectorAll('.school-checkbox:checked').length;
+                let storeCount = document.querySelectorAll('.store-checkbox:checked').length;
 
-            let schoolWrapper = document.getElementById('schoolBoxWrapper');
-            let schoolError = document.getElementById('schoolErrorFeedback');
-            let storeWrapper = document.getElementById('storeBoxWrapper');
-            let storeError = document.getElementById('storeErrorFeedback');
+                let schoolWrapper = document.getElementById('schoolBoxWrapper');
+                let schoolError = document.getElementById('schoolErrorFeedback');
+                let storeWrapper = document.getElementById('storeBoxWrapper');
+                let storeError = document.getElementById('storeErrorFeedback');
 
-            let hasError = false;
+                let hasError = false;
 
-            if (schoolCount === 0) {
-                if (schoolWrapper) {
-                    schoolWrapper.style.border = '2px solid #ff3e1d';
-                    schoolWrapper.style.boxShadow = '0 0 0 0.2rem rgba(255, 62, 29, 0.2)';
+                if (schoolCount === 0) {
+                    if (schoolWrapper) {
+                        schoolWrapper.style.border = '2px solid #ff3e1d';
+                        schoolWrapper.style.boxShadow = '0 0 0 0.2rem rgba(255, 62, 29, 0.2)';
+                    }
+                    if (schoolError) schoolError.classList.remove('d-none');
+                    hasError = true;
+                } else {
+                    if (schoolWrapper) {
+                        schoolWrapper.style.border = '';
+                        schoolWrapper.style.boxShadow = '';
+                    }
+                    if (schoolError) schoolError.classList.add('d-none');
                 }
-                if (schoolError) schoolError.classList.remove('d-none');
-                hasError = true;
-            } else {
-                if (schoolWrapper) {
-                    schoolWrapper.style.border = '';
-                    schoolWrapper.style.boxShadow = '';
-                }
-                if (schoolError) schoolError.classList.add('d-none');
-            }
 
-            if (storeCount === 0) {
-                if (storeWrapper) {
-                    storeWrapper.style.border = '2px solid #ff3e1d';
-                    storeWrapper.style.boxShadow = '0 0 0 0.2rem rgba(255, 62, 29, 0.2)';
+                if (storeCount === 0) {
+                    if (storeWrapper) {
+                        storeWrapper.style.border = '2px solid #ff3e1d';
+                        storeWrapper.style.boxShadow = '0 0 0 0.2rem rgba(255, 62, 29, 0.2)';
+                    }
+                    if (storeError) storeError.classList.remove('d-none');
+                    hasError = true;
+                } else {
+                    if (storeWrapper) {
+                        storeWrapper.style.border = '';
+                        storeWrapper.style.boxShadow = '';
+                    }
+                    if (storeError) storeError.classList.add('d-none');
                 }
-                if (storeError) storeError.classList.remove('d-none');
-                hasError = true;
-            } else {
-                if (storeWrapper) {
-                    storeWrapper.style.border = '';
-                    storeWrapper.style.boxShadow = '';
-                }
-                if (storeError) storeError.classList.add('d-none');
-            }
 
-            if (hasError) {
+                if (hasError) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (schoolCount === 0 && storeCount === 0) {
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Please select at least one School and one Store.');
+                        }
+                    } else if (schoolCount === 0) {
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Please select at least one School.');
+                        }
+                    } else if (storeCount === 0) {
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Please select at least one Store.');
+                        }
+                    }
+                    return false;
+                }
+            });
+
+            // Delegated AJAX Delete User
+            $(document).on('click', '.delete-user-ajax-btn', function(e) {
                 e.preventDefault();
-                e.stopPropagation();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this user';
 
-                if (schoolCount === 0 && storeCount === 0) {
-                    if (typeof toastr !== 'undefined') {
-                        toastr.error('Please select at least one School and one Store.');
+                Swal.fire({
+                    title: 'Delete User?',
+                    text: `Are you sure you want to delete "${name}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'User has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete user.', 'error');
+                            }
+                        });
                     }
-                } else if (schoolCount === 0) {
-                    if (typeof toastr !== 'undefined') {
-                        toastr.error('Please select at least one School.');
-                    }
-                } else if (storeCount === 0) {
-                    if (typeof toastr !== 'undefined') {
-                        toastr.error('Please select at least one Store.');
-                    }
-                }
-                return false;
-            }
+                });
+            });
         });
     </script>
+@endpush
 @endsection

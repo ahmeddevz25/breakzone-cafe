@@ -8,72 +8,37 @@
         <div class="layout-container">
             <div class="layout-page">
                 <div class="card mt-5 shadow-sm rounded" style="margin: 31px;">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light border-bottom">
                         <h5 class="card-title mb-0 text-md-start text-center">Brands Management</h5>
-                        @can('brand add')
-                            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                data-bs-target="#brandModal" onclick="resetBrandForm()">
-                                <i class="bx bx-plus icon-sm"></i>
-                                <span class="d-none d-sm-inline-block">Add New Brand</span>
-                            </button>
-                        @endcan
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="statusFilter" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="">All Status</option>
+                                <option value="A">Active</option>
+                                <option value="I">Inactive</option>
+                            </select>
+                            @can('brand add')
+                                <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#brandModal" onclick="resetBrandForm()">
+                                    <i class="bx bx-plus icon-sm"></i>
+                                    <span class="d-none d-sm-inline-block">Add New Brand</span>
+                                </button>
+                            @endcan
+                        </div>
                     </div>
 
-                    <!-- Brands Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Brands Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100" id="brandsTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>#</th>
+                                    <th style="width: 50px;" class="text-center">#</th>
                                     <th>Brand Name</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Options</th>
+                                    <th class="text-center" style="width: 120px;">Status</th>
+                                    <th class="text-center" style="width: 120px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($brands as $key => $brand)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $brand->name }}</td>
-                                        <td>
-                                            @if ($brand->status == 'A' || $brand->status == 'active' || $brand->status === '1' || $brand->status === 1)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-danger">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- Edit --}}
-                                                @can('brand edit')
-                                                    <button type="button" title="Edit"
-                                                        class="action-btn action-btn-edit edit-brand-btn"
-                                                        data-id="{{ $brand->id }}" 
-                                                        data-name="{{ $brand->name }}" 
-                                                        data-position="{{ $brand->position ?? 0 }}"
-                                                        data-status="{{ $brand->status }}"
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#brandModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete --}}
-                                                @can('brand delete')
-                                                    <a href="{{ route('brands.delete', $brand->id) }}" title="Delete"
-                                                        onclick="return confirm('Are you sure you want to delete this brand?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">No brands available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -82,7 +47,7 @@
                     <div class="modal fade" id="brandModal" tabindex="-1" aria-labelledby="brandModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
-                                <form id="brandForm" action="{{ route('brands.store') }}" method="POST">
+                                <form id="brandForm" action="{{ route('brands.store') }}" method="POST" data-ajax-table="#brandsTable">
                                     @csrf
                                     <div class="modal-header border-bottom py-3">
                                         <h5 class="modal-title fw-bold" id="brandModalLabel">Add New Brand</h5>
@@ -121,59 +86,167 @@
                         </div>
                     </div>
 
-
                 </div>
             </div>
         </div>
     </div>
     
     <div class="layout-overlay layout-menu-toggle"></div>
+@endsection
 
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const brandForm = document.getElementById('brandForm');
-            const modalTitle = document.getElementById('brandModalLabel');
-            const submitBtn = document.getElementById('submitBtn');
-            
-            const brandName = document.getElementById('brandName');
-            const brandPosition = document.getElementById('brandPosition');
-            const brandStatus = document.getElementById('brandStatus');
-            
-            const brandRoute = "{{ route('brands.store') }}";
-
-            window.resetBrandForm = function() {
-                brandForm.action = brandRoute;
-                modalTitle.textContent = 'Add New Brand';
-                submitBtn.textContent = 'Save Brand';
-                brandForm.reset();
-                brandPosition.value = "0";
-                brandStatus.value = "A";
-            };
-
-            // Edit Brand
-            document.querySelectorAll('.edit-brand-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const position = this.dataset.position;
-                    let status = this.dataset.status;
-                    if (status === "active" || status === "1" || status === "A") {
-                        status = "A";
-                    } else {
-                        status = "I";
+        $(document).ready(function() {
+            // Server-Side Processing AJAX DataTable Setup
+            const dataTable = $('#brandsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.status_filter = $('#statusFilter').val();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Brands DataTable Error:', error);
                     }
-
-                    brandForm.action = `/brands/${id}/update`;
-                    modalTitle.textContent = 'Edit Brand';
-                    submitBtn.textContent = 'Update Brand';
-                    
-                    brandName.value = name;
-                    brandPosition.value = position || '0';
-                    brandStatus.value = status;
-                });
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'name', name: 'name' },
+                    { data: 'status', name: 'status', className: 'text-center' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search brands...",
+                    lengthMenu: "Show _MENU_ entries",
+                    processing: '<div class="d-flex justify-content-center align-items-center py-2 text-primary"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading brands...</div>',
+                    emptyTable: '<div class="text-center text-muted py-4"><i class="bx bx-badge-check fs-2 d-block mb-1"></i> No brands found</div>',
+                    zeroRecords: '<div class="text-center text-muted py-4"><i class="bx bx-search-alt fs-2 d-block mb-1"></i> No matching brands found</div>',
+                    info: "Showing _START_ to _END_ of _TOTAL_ brands",
+                    infoEmpty: "Showing 0 to 0 of 0 brands",
+                    infoFiltered: "(filtered from _MAX_ total brands)"
+                }
             });
 
+            // Trigger reload on custom status filter change
+            $('#statusFilter').on('change', function() {
+                dataTable.ajax.reload();
+            });
 
+            const brandForm = document.getElementById('brandForm');
+            const brandRoute = "{{ route('brands.store') }}";
+
+            // Reset modal for Add Brand
+            window.resetBrandForm = function() {
+                brandForm.action = brandRoute;
+                $('#brandModalLabel').text('Add New Brand');
+                $('#submitBtn').text('Save Brand');
+                brandForm.reset();
+                $('#brandPosition').val("0");
+                $('#brandStatus').val("A");
+                $(brandForm).find('.is-invalid').removeClass('is-invalid');
+                $(brandForm).find('.invalid-feedback').remove();
+            };
+
+            // Edit Brand Handler (Delegated for AJAX-rendered rows)
+            $(document).on('click', '.edit-brand-btn', function() {
+                var btn = $(this);
+                var id = btn.data('id');
+                var name = btn.data('name');
+                var position = btn.data('position');
+                var status = btn.data('status');
+
+                if (status === "active" || status === "1" || status === "A") {
+                    status = "A";
+                } else {
+                    status = "I";
+                }
+
+                brandForm.action = `/brands/${id}/update`;
+                $('#brandModalLabel').text('Edit Brand');
+                $('#submitBtn').text('Update Brand');
+
+                $('#brandName').val(name || '');
+                $('#brandPosition').val(position || '0');
+                $('#brandStatus').val(status);
+
+                $(brandForm).find('.is-invalid').removeClass('is-invalid');
+                $(brandForm).find('.invalid-feedback').remove();
+
+                var modalEl = document.getElementById('brandModal');
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+
+            // AJAX Delete Brand Handler with SweetAlert2 Confirmation
+            $(document).on('click', '.delete-brand-ajax-btn', function(e) {
+                e.preventDefault();
+                var btn = $(this);
+                var url = btn.data('url');
+                var brandName = btn.data('name') || 'this brand';
+
+                Swal.fire({
+                    title: 'Delete Brand?',
+                    text: `Are you sure you want to delete "${brandName}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                    focusCancel: true,
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-2',
+                        cancelButton: 'btn btn-outline-secondary'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Deleting...',
+                            text: 'Please wait...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        $.ajax({
+                            url: url,
+                            type: 'GET',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(response) {
+                                Swal.close();
+                                if (response.status || response.success) {
+                                    toastr.success(response.message || 'Brand deleted successfully.');
+                                    dataTable.ajax.reload(null, false);
+                                } else {
+                                    toastr.error(response.message || 'Failed to delete brand.');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.close();
+                                var errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete brand. Please try again.';
+                                toastr.error(errMsg);
+                            }
+                        });
+                    }
+                });
+            });
         });
     </script>
-@endsection
+@endpush

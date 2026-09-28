@@ -24,13 +24,12 @@ class FoodController extends Controller
         $this->middleware('permission:food delete')->only('destroy');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $foods = Food::with(['store', 'category', 'foodDetails.ingredient.usageUnit', 'foodDetails.ingredient.buyingUnit'])
-                ->orderBy('position', 'asc')
-                ->orderBy('id', 'desc')
-                ->get();
+            if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+                return $this->getFoodsDataAjax($request);
+            }
 
             $stores = Store::where('status', 'A')->orderBy('position', 'asc')->get();
             $categories = Category::where('status', 'A')->orderBy('position', 'asc')->get();
@@ -39,10 +38,143 @@ class FoodController extends Controller
                 ->orderBy('name', 'asc')
                 ->get();
 
-            return view('admin.foods.index', compact('foods', 'stores', 'categories', 'ingredients'));
+            return view('admin.foods.index', compact('stores', 'categories', 'ingredients'));
         } catch (\Exception $e) {
             Log::error('Food Index Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Something went wrong while fetching foods.');
+        }
+    }
+
+    public function getFoodsDataAjax(Request $request)
+    {
+        try {
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+            $searchValue = $request->input('search.value');
+            $statusFilter = $request->input('status_filter');
+
+            $recordsTotal = Food::count();
+
+            $query = Food::with(['store', 'category']);
+
+            if (!empty($statusFilter)) {
+                $query->where('status', $statusFilter);
+            }
+
+            if (!empty($searchValue)) {
+                $query->where(function ($q) use ($searchValue) {
+                    $q->where('name', 'like', "%{$searchValue}%")
+                      ->orWhere('code', 'like', "%{$searchValue}%")
+                      ->orWhereHas('category', function ($cq) use ($searchValue) {
+                          $cq->where('category', 'like', "%{$searchValue}%");
+                      })
+                      ->orWhereHas('store', function ($sq) use ($searchValue) {
+                          $sq->where('store', 'like', "%{$searchValue}%");
+                      });
+
+                    if (stripos('Active', $searchValue) !== false) {
+                        $q->orWhere('status', 'A');
+                    } elseif (stripos('Inactive', $searchValue) !== false) {
+                        $q->orWhere('status', 'I');
+                    }
+                });
+            }
+
+            $recordsFiltered = $query->count();
+
+            $query->orderBy('position', 'asc')->orderBy('id', 'desc');
+
+            if ($length > 0) {
+                $query->skip($start)->take($length);
+            }
+
+            $foods = $query->get();
+
+            $user = auth()->user();
+            $canEdit = $user ? $user->can('food edit') : true;
+            $canDelete = $user ? $user->can('food delete') : true;
+
+            $data = [];
+            foreach ($foods as $key => $food) {
+                $rowIndex = $start + $key + 1;
+                $foodName = e($food->name ?? '');
+                $foodCode = e($food->code ?? '');
+                $categoryPath = $food->category ? $food->category->full_path : '-';
+                $storeName = $food->store ? ($food->store->store ?? $food->store->name ?? '-') : '-';
+                $pictureUrl = $food->picture_url;
+
+                // Food name with picture or icon
+                $foodHtml = '<div class="d-flex align-items-center gap-2">';
+                if ($pictureUrl) {
+                    $foodHtml .= '<img src="' . e($pictureUrl) . '" alt="' . $foodName . '" class="rounded" style="width: 38px; height: 38px; object-fit: cover; border: 1px solid #e2e8f0;">';
+                } else {
+                    $foodHtml .= '<div class="rounded d-flex align-items-center justify-content-center bg-light text-secondary" style="width: 38px; height: 38px; border: 1px solid #e2e8f0;"><i class="bx bx-restaurant fs-5"></i></div>';
+                }
+                $foodHtml .= '<span class="fw-bold text-dark">' . $foodName . '</span></div>';
+
+                // Status
+                $statusVal = strtoupper(trim($food->status ?? ''));
+                if ($statusVal === 'A' || $statusVal === 'ACTIVE' || $statusVal === '1') {
+                    $statusHtml = '<span class="badge bg-success">Active</span>';
+                } else {
+                    $statusHtml = '<span class="badge bg-danger">Inactive</span>';
+                }
+
+                // Actions
+                $actionsHtml = '<div class="table-actions justify-content-center">';
+                $actionsHtml .= '<button type="button" title="View Details" class="action-btn action-btn-view view-food-btn" '
+                    . 'data-id="' . $food->id . '" '
+                    . 'data-bs-toggle="modal" data-bs-target="#viewFoodModal">'
+                    . '<i class="bx bx-show"></i>'
+                    . '</button>';
+
+                if ($canEdit) {
+                    $actionsHtml .= '<button type="button" title="Edit" class="action-btn action-btn-edit edit-food-btn" '
+                        . 'data-id="' . $food->id . '" '
+                        . 'data-bs-toggle="modal" data-bs-target="#foodModal">'
+                        . '<i class="bx bx-edit"></i>'
+                        . '</button>';
+                }
+
+                if ($canDelete) {
+                    $actionsHtml .= '<button type="button" title="Delete" class="action-btn action-btn-delete delete-food-ajax-btn" '
+                        . 'data-url="' . route('foods.delete', $food->id) . '" '
+                        . 'data-name="' . $foodName . '">'
+                        . '<i class="bx bx-trash"></i>'
+                        . '</button>';
+                }
+                $actionsHtml .= '</div>';
+
+                $data[] = [
+                    'index' => $rowIndex,
+                    'food' => $foodHtml,
+                    'code' => '<span class="text-dark font-monospace fw-medium">' . $foodCode . '</span>',
+                    'category' => '<span class="text-dark fw-medium">' . $categoryPath . '</span>',
+                    'store' => '<span class="text-dark fw-medium">' . e($storeName) . '</span>',
+                    'stock' => '<span class="text-dark fw-bold text-primary">' . number_format($food->stock ?? 0, 2) . '</span>',
+                    'cost_price' => '<span class="text-dark fw-medium">' . number_format($food->cost_price, 2) . '</span>',
+                    'sale_price' => '<span class="text-dark fw-bold text-success">' . number_format($food->price, 2) . '</span>',
+                    'status' => $statusHtml,
+                    'options' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Food DataTables Ajax Error: ' . $e->getMessage());
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -243,9 +375,16 @@ class FoodController extends Controller
 
             $food->delete();
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Food item deleted successfully.']);
+            }
+
             return redirect()->route('foods.index')->with('success', 'Food item deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Food Delete Error: ' . $e->getMessage());
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Failed to delete food: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Failed to delete food: ' . $e->getMessage());
         }
     }

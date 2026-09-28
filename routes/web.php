@@ -1,12 +1,32 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\PermissionController;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CafeSettingController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\FoodController;
+use App\Http\Controllers\Admin\IngredientController;
+use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\PurchaseController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\StoreController;
+use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\UnitController;
+use App\Http\Controllers\Admin\UserController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application.
+|
+*/
+
+// Public & Maintenance Routes
 Route::get('/', function () {
     return view('admin.login');
 });
@@ -21,105 +41,138 @@ Route::get('/site-up', function () {
     return 'Site is now live (up).';
 });
 
-
+// Admin Authentication & Protected Area
 Route::middleware(['admin.redirect'])->group(function () {
     Route::get('admin', function () {
         return redirect()->route('login');
     });
 
-    Route::get('admin/login', [AdminController::class, 'LoginForm'])->name('login');
-    Route::post('admin/login', [AdminController::class, 'login'])->name('login.submit');
+    // Guest Auth Routes
+    Route::controller(AdminController::class)->group(function () {
+        Route::get('admin/login', 'LoginForm')->name('login');
+        Route::post('admin/login', 'login')->name('login.submit');
+    });
 
+    // Authenticated Admin Routes
     Route::middleware(['auth'])->group(function () {
-        Route::get('admin/dashboard', [AdminController::class, 'index'])->name('dashboard');
-        Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
+        // Dashboard, Logout & Utilities
+        Route::controller(AdminController::class)->group(function () {
+            Route::get('admin/dashboard', 'index')->name('dashboard');
+            Route::post('/logout', 'logout')->name('logout');
+            Route::get('clear-cache', 'clearcache')->name('clearcache');
+        });
 
-        // Index - All Users
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::post('/users', [UserController::class, 'store'])->name('users.store');
-        Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
-        Route::get('/users/delete/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+        // Users Management
+        Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{id}', 'update')->name('update');
+            Route::match(['get', 'delete'], '/delete/{id}', 'destroy')->name('destroy');
+        });
 
-        //Roles Management
-        Route::get('/roles', [RoleController::class, 'index'])->name('roles');
-        Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
-        Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
-        Route::get('/roles/{id}/edit', [RoleController::class, 'edit'])->name('roles.edit');
-        Route::post('/roles/{id}/update', [RoleController::class, 'update'])->name('roles.update');
-        Route::get('/roles/{id}/delete', [RoleController::class, 'destroy'])->name('roles.delete');
+        // Roles Management
+        Route::prefix('roles')->controller(RoleController::class)->group(function () {
+            Route::get('/', 'index')->name('roles');
+            Route::get('/create', 'create')->name('roles.create');
+            Route::post('/store', 'store')->name('roles.store');
+            Route::get('/{id}/edit', 'edit')->name('roles.edit');
+            Route::post('/{id}/update', 'update')->name('roles.update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('roles.delete');
+        });
 
-        //Permissions Management
-        Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions');
-        Route::post('/permissions/store', [PermissionController::class, 'store'])->name('permissions.store');
-        Route::get('/permissions/edit/{id}', [PermissionController::class, 'edit'])->name('permissions.edit');
-        Route::post('/permissions/update/{id}', [PermissionController::class, 'update'])->name('permissions.update');
-        Route::get('/permissions/delete/{id}', [PermissionController::class, 'destroy'])->name('permissions.delete');
+        // Permissions Management
+        Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
+            Route::get('/', 'index')->name('permissions');
+            Route::post('/store', 'store')->name('permissions.store');
+            Route::get('/edit/{id}', 'edit')->name('permissions.edit');
+            Route::post('/update/{id}', 'update')->name('permissions.update');
+            Route::match(['get', 'delete'], '/delete/{id}', 'destroy')->name('permissions.delete');
+        });
 
-        // Store Management
-        Route::get('/stores', [\App\Http\Controllers\Admin\StoreController::class, 'index'])->name('stores.index');
-        Route::post('/stores/store', [\App\Http\Controllers\Admin\StoreController::class, 'store'])->name('stores.store');
-        Route::post('/stores/{id}/update', [\App\Http\Controllers\Admin\StoreController::class, 'update'])->name('stores.update');
-        Route::get('/stores/{id}/delete', [\App\Http\Controllers\Admin\StoreController::class, 'destroy'])->name('stores.delete');
+        // Stores Management
+        Route::prefix('stores')->name('stores.')->controller(StoreController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Suppliers Management
-        Route::get('/suppliers', [\App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.index');
-        Route::post('/suppliers/store', [\App\Http\Controllers\Admin\SupplierController::class, 'store'])->name('suppliers.store');
-        Route::post('/suppliers/{id}/update', [\App\Http\Controllers\Admin\SupplierController::class, 'update'])->name('suppliers.update');
-        Route::get('/suppliers/{id}/delete', [\App\Http\Controllers\Admin\SupplierController::class, 'destroy'])->name('suppliers.delete');
+        Route::prefix('suppliers')->name('suppliers.')->controller(SupplierController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Brands Management
-        Route::get('/brands', [\App\Http\Controllers\Admin\BrandController::class, 'index'])->name('brands.index');
-        Route::post('/brands/store', [\App\Http\Controllers\Admin\BrandController::class, 'store'])->name('brands.store');
-        Route::post('/brands/{id}/update', [\App\Http\Controllers\Admin\BrandController::class, 'update'])->name('brands.update');
-        Route::get('/brands/{id}/delete', [\App\Http\Controllers\Admin\BrandController::class, 'destroy'])->name('brands.delete');
+        Route::prefix('brands')->name('brands.')->controller(BrandController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Categories Management
-        Route::get('/categories', [\App\Http\Controllers\Admin\CategoryController::class, 'index'])->name('categories.index');
-        Route::post('/categories/store', [\App\Http\Controllers\Admin\CategoryController::class, 'store'])->name('categories.store');
-        Route::post('/categories/{id}/update', [\App\Http\Controllers\Admin\CategoryController::class, 'update'])->name('categories.update');
-        Route::get('/categories/{id}/delete', [\App\Http\Controllers\Admin\CategoryController::class, 'destroy'])->name('categories.delete');
+        Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Units Management
-        Route::get('/units', [\App\Http\Controllers\Admin\UnitController::class, 'index'])->name('units.index');
-        Route::post('/units/store', [\App\Http\Controllers\Admin\UnitController::class, 'store'])->name('units.store');
-        Route::post('/units/{id}/update', [\App\Http\Controllers\Admin\UnitController::class, 'update'])->name('units.update');
-        Route::get('/units/{id}/delete', [\App\Http\Controllers\Admin\UnitController::class, 'destroy'])->name('units.delete');
+        Route::prefix('units')->name('units.')->controller(UnitController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Items Management
-        Route::get('/items', [\App\Http\Controllers\Admin\ItemController::class, 'index'])->name('items.index');
-        Route::post('/items/store', [\App\Http\Controllers\Admin\ItemController::class, 'store'])->name('items.store');
-        Route::post('/items/{id}/update', [\App\Http\Controllers\Admin\ItemController::class, 'update'])->name('items.update');
-        Route::get('/items/{id}/delete', [\App\Http\Controllers\Admin\ItemController::class, 'destroy'])->name('items.delete');
+        Route::prefix('items')->name('items.')->controller(ItemController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Ingredients Management
-        Route::get('/ingredients', [\App\Http\Controllers\Admin\IngredientController::class, 'index'])->name('ingredients.index');
-        Route::post('/ingredients/store', [\App\Http\Controllers\Admin\IngredientController::class, 'store'])->name('ingredients.store');
-        Route::post('/ingredients/{id}/update', [\App\Http\Controllers\Admin\IngredientController::class, 'update'])->name('ingredients.update');
-        Route::get('/ingredients/{id}/delete', [\App\Http\Controllers\Admin\IngredientController::class, 'destroy'])->name('ingredients.delete');
+        Route::prefix('ingredients')->name('ingredients.')->controller(IngredientController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
+        
         // Foods Management
-        Route::get('/foods', [\App\Http\Controllers\Admin\FoodController::class, 'index'])->name('foods.index');
-        Route::post('/foods/store', [\App\Http\Controllers\Admin\FoodController::class, 'store'])->name('foods.store');
-        Route::post('/foods/{id}/update', [\App\Http\Controllers\Admin\FoodController::class, 'update'])->name('foods.update');
-        Route::get('/foods/{id}/delete', [\App\Http\Controllers\Admin\FoodController::class, 'destroy'])->name('foods.delete');
-        Route::get('/foods/generate-code', [\App\Http\Controllers\Admin\FoodController::class, 'generateCode'])->name('foods.generate-code');
-        Route::get('/foods/{id}/edit-data', [\App\Http\Controllers\Admin\FoodController::class, 'getFoodDetails'])->name('foods.edit-data');
+        Route::prefix('foods')->name('foods.')->controller(FoodController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/generate-code', 'generateCode')->name('generate-code');
+            Route::get('/{id}/edit-data', 'getFoodDetails')->name('edit-data');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
 
         // Purchases Management
-        Route::get('/purchases', [\App\Http\Controllers\Admin\PurchaseController::class, 'index'])->name('purchases.index');
-        Route::post('/purchases/store', [\App\Http\Controllers\Admin\PurchaseController::class, 'store'])->name('purchases.store');
-        Route::get('/purchases/{id}/edit-data', [\App\Http\Controllers\Admin\PurchaseController::class, 'editData'])->name('purchases.edit-data');
-        Route::post('/purchases/{id}/update', [\App\Http\Controllers\Admin\PurchaseController::class, 'update'])->name('purchases.update');
-        Route::get('/purchases/{id}/delete', [\App\Http\Controllers\Admin\PurchaseController::class, 'destroy'])->name('purchases.delete');
-        Route::get('/purchases/generate-po', [\App\Http\Controllers\Admin\PurchaseController::class, 'generatePoNo'])->name('purchases.generate-po');
-        Route::get('/purchases/product-info', [\App\Http\Controllers\Admin\PurchaseController::class, 'getProductInfo'])->name('purchases.product-info');
-
-        Route::get('clear-cache', [AdminController::class, 'clearcache'])->name('clearcache');
-
-        // Cafe Settings Routes
-        Route::controller(App\Http\Controllers\Admin\CafeSettingController::class)->group(function () {
-            Route::get('cafe-settings', 'index')->name('cafe-settings.index');
-            Route::post('cafe-settings', 'update')->name('cafe-settings.update');
+        Route::prefix('purchases')->name('purchases.')->controller(PurchaseController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/generate-po', 'generatePoNo')->name('generate-po');
+            Route::get('/product-info', 'getProductInfo')->name('product-info');
+            Route::get('/{id}/edit-data', 'editData')->name('edit-data');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
+
+        // Cafe Settings
+        Route::prefix('cafe-settings')->name('cafe-settings.')->controller(CafeSettingController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'update')->name('update');
+        });
+
+        
     });
 });

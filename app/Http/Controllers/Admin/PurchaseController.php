@@ -25,11 +25,11 @@ class PurchaseController extends Controller
         $this->middleware('permission:purchase delete')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $purchases = Purchase::with(['store', 'supplier', 'details.item', 'details.ingredient', 'details.food', 'details.unit'])
-            ->orderBy('id', 'desc')
-            ->get();
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+            return $this->getPurchasesDataAjax($request);
+        }
 
         $stores = Store::where('status', 'A')->orWhere('status', '1')->orderBy('store', 'asc')->get();
         if ($stores->isEmpty()) {
@@ -47,7 +47,110 @@ class PurchaseController extends Controller
 
         $nextPoNo = $this->getAutoPoNo();
 
-        return view('admin.purchases.index', compact('purchases', 'stores', 'suppliers', 'items', 'ingredients', 'foods', 'nextPoNo'));
+        return view('admin.purchases.index', compact('stores', 'suppliers', 'items', 'ingredients', 'foods', 'nextPoNo'));
+    }
+
+    public function getPurchasesDataAjax(Request $request)
+    {
+        try {
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+            $searchValue = $request->input('search.value');
+
+            $recordsTotal = Purchase::count();
+
+            $query = Purchase::with(['store', 'supplier', 'details']);
+
+            if (!empty($searchValue)) {
+                $query->where(function ($q) use ($searchValue) {
+                    $q->where('po_no', 'like', "%{$searchValue}%")
+                      ->orWhere('total', 'like', "%{$searchValue}%")
+                      ->orWhere('purchase_date', 'like', "%{$searchValue}%")
+                      ->orWhereHas('store', function ($sq) use ($searchValue) {
+                          $sq->where('store', 'like', "%{$searchValue}%");
+                      })
+                      ->orWhereHas('supplier', function ($supq) use ($searchValue) {
+                          $supq->where('name', 'like', "%{$searchValue}%");
+                      });
+                });
+            }
+
+            $recordsFiltered = $query->count();
+
+            $query->orderBy('id', 'desc');
+
+            if ($length > 0) {
+                $query->skip($start)->take($length);
+            }
+
+            $purchases = $query->get();
+
+            $user = auth()->user();
+            $canEdit = $user ? $user->can('purchase edit') : true;
+            $canDelete = $user ? $user->can('purchase delete') : true;
+
+            $data = [];
+            foreach ($purchases as $key => $p) {
+                $rowIndex = $start + $key + 1;
+                $poNumber = e($p->po_no ?? 'PO-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
+                $storeName = e($p->store ? ($p->store->store ?? $p->store->name) : '-');
+                $supplierName = e($p->supplier ? $p->supplier->name : '-');
+                $dateFormatted = $p->purchase_date ? $p->purchase_date->format('Y-m-d') : '-';
+                $detailsCount = $p->details ? $p->details->count() : 0;
+                $totalFormatted = 'Rs ' . number_format($p->total, 2);
+
+                $actionsHtml = '<div class="table-actions justify-content-center">';
+                $actionsHtml .= '<button type="button" class="action-btn action-btn-view view-purchase-btn" '
+                    . 'data-id="' . $p->id . '" title="View Purchase Details" '
+                    . 'data-bs-toggle="modal" data-bs-target="#viewPurchaseModal">'
+                    . '<i class="bx bx-show"></i>'
+                    . '</button>';
+
+                if ($canEdit) {
+                    $actionsHtml .= '<button type="button" class="action-btn action-btn-edit edit-purchase-btn" '
+                        . 'data-id="' . $p->id . '" title="Edit Purchase" '
+                        . 'data-bs-toggle="modal" data-bs-target="#purchaseModal">'
+                        . '<i class="bx bx-edit"></i>'
+                        . '</button>';
+                }
+
+                if ($canDelete) {
+                    $actionsHtml .= '<button type="button" class="action-btn action-btn-delete delete-purchase-ajax-btn" '
+                        . 'data-url="' . route('purchases.delete', $p->id) . '" '
+                        . 'data-name="' . $poNumber . '" title="Delete Purchase">'
+                        . '<i class="bx bx-trash"></i>'
+                        . '</button>';
+                }
+                $actionsHtml .= '</div>';
+
+                $data[] = [
+                    'index' => $rowIndex,
+                    'po_no' => '<span class="badge bg-label-dark font-monospace fs-7 px-2 py-1">' . $poNumber . '</span>',
+                    'store' => '<span class="fw-semibold text-dark">' . $storeName . '</span>',
+                    'supplier' => '<span class="text-dark fw-medium">' . $supplierName . '</span>',
+                    'purchase_date' => '<span class="text-dark">' . $dateFormatted . '</span>',
+                    'items' => '<span class="badge bg-label-primary rounded-pill px-2">' . $detailsCount . '</span>',
+                    'total' => '<span class="fw-bold text-success fs-6">' . $totalFormatted . '</span>',
+                    'options' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function generatePoNo()
@@ -401,10 +504,17 @@ class PurchaseController extends Controller
             $purchase->delete();
             DB::commit();
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => true, 'message' => 'Purchase record deleted successfully!']);
+            }
+
             toast('Purchase record deleted successfully!', 'success');
             return redirect()->route('purchases.index');
         } catch (\Exception $e) {
             DB::rollBack();
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Error deleting purchase: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Error deleting purchase: ' . $e->getMessage());
         }
     }

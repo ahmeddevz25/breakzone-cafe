@@ -8,112 +8,42 @@
         <div class="layout-container">
             <div class="layout-page">
                 <div class="card mt-5 shadow-sm rounded" style="margin: 31px;">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light border-bottom">
                         <h5 class="card-title mb-0 text-md-start text-center">Items Management</h5>
-                        @can('item add')
-                            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                data-bs-target="#itemModal" onclick="resetItemForm()">
-                                <i class="bx bx-plus icon-sm"></i>
-                                <span class="d-none d-sm-inline-block">Add New Item</span>
-                            </button>
-                        @endcan
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="statusFilter" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="">All Status</option>
+                                <option value="A">Active</option>
+                                <option value="I">Inactive</option>
+                            </select>
+                            @can('item add')
+                                <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#itemModal" onclick="resetItemForm()">
+                                    <i class="bx bx-plus icon-sm"></i>
+                                    <span class="d-none d-sm-inline-block">Add New Item</span>
+                                </button>
+                            @endcan
+                        </div>
                     </div>
 
-                    <!-- Items Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Items Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100" id="itemsTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>#</th>
+                                    <th style="width: 50px;" class="text-center">#</th>
                                     <th>Item</th>
                                     <th>Code</th>
                                     <th>Category</th>
                                     <th>Stock</th>
                                     <th>Purchase Price</th>
                                     <th>Sale Price</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Options</th>
+                                    <th class="text-center" style="width: 100px;">Status</th>
+                                    <th class="text-center" style="width: 130px;">Options</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($items as $key => $item)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $item->name }}</td>
-                                        <td class="text-dark font-monospace fw-medium">{{ $item->code }}</td>
-                                        <td class="text-dark fw-medium">{!! $item->category ? $item->category->full_path : '-' !!}</td>
-                                        <td class="text-dark fw-medium">{{ number_format($item->stock ?? 0, 2) }}</td>
-                                        <td class="text-dark fw-medium">{{ number_format($item->price, 2) }}</td>
-                                        <td class="text-dark fw-bold">{{ number_format($item->sale_price, 2) }}</td>
-                                        <td>
-                                            @if ($item->status == 'A' || $item->status == 'active' || $item->status === '1' || $item->status === 1)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-danger">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- View Details (Eye Icon) --}}
-                                                <button type="button" title="View Details"
-                                                    class="action-btn action-btn-view view-item-btn"
-                                                    data-name="{{ $item->name }}"
-                                                    data-store="{{ $item->store->store ?? $item->store->name ?? '-' }}"
-                                                    data-category="{!! $item->category ? $item->category->full_path : '-' !!}"
-                                                    data-code="{{ $item->code }}"
-                                                    data-unit="{{ $item->unit->unit ?? $item->unit->name ?? '-' }}"
-                                                    data-brand="{{ $item->brand->name ?? '-' }}"
-                                                    data-price="{{ number_format($item->price, 2) }}"
-                                                    data-sale_price="{{ number_format($item->sale_price, 2) }}"
-                                                    data-stock="{{ number_format($item->stock ?? 0, 2) }}"
-                                                    data-details="{{ $item->details ?? '-' }}"
-                                                    data-picture="{{ $item->picture_url }}"
-                                                    data-status="{{ $item->status }}"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#viewItemModal">
-                                                    <i class='bx bx-show'></i>
-                                                </button>
-
-                                                {{-- Edit Item --}}
-                                                @can('item edit')
-                                                    <button type="button" title="Edit"
-                                                        class="action-btn action-btn-edit edit-item-btn"
-                                                        data-id="{{ $item->id }}"
-                                                        data-name="{{ $item->name }}"
-                                                        data-store_id="{{ $item->store_id }}"
-                                                        data-category_id="{{ $item->category_id }}"
-                                                        data-code="{{ $item->code }}"
-                                                        data-unit_id="{{ $item->unit_id }}"
-                                                        data-brand_id="{{ $item->brand_id }}"
-                                                        data-price="{{ $item->price }}"
-                                                        data-sale_price="{{ $item->sale_price }}"
-                                                        data-stock="{{ $item->stock }}"
-                                                        data-details="{{ $item->details }}"
-                                                        data-picture="{{ $item->picture_url }}"
-                                                        data-status="{{ $item->status }}"
-                                                        data-position="{{ $item->position }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#itemModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete Item --}}
-                                                @can('item delete')
-                                                    <a href="{{ route('items.delete', $item->id) }}" title="Delete"
-                                                        onclick="return confirm('Are you sure you want to delete this item?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">No items available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -122,7 +52,7 @@
                     <div class="modal fade" id="itemModal" tabindex="-1" aria-labelledby="itemModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-xl modal-dialog-centered">
                             <div class="modal-content">
-                                <form id="itemForm" action="{{ route('items.store') }}" method="POST" enctype="multipart/form-data">
+                                <form id="itemForm" action="{{ route('items.store') }}" method="POST" enctype="multipart/form-data" data-ajax-table="#itemsTable">
                                     @csrf
                                     <div class="modal-header border-bottom py-3">
                                         <h5 class="modal-title fw-bold" id="itemModalLabel">Add New Item</h5>
@@ -312,10 +242,69 @@
                         </div>
                     </div>
 
-    <div class="layout-overlay layout-menu-toggle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="layout-overlay layout-menu-toggle"></div>
+@endsection
+
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        $(document).ready(function() {
+            // Server-Side Processing AJAX DataTable Setup for Items
+            const dataTable = $('#itemsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.status_filter = $('#statusFilter').val();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Items DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'item', name: 'item' },
+                    { data: 'code', name: 'code' },
+                    { data: 'category', name: 'category' },
+                    { data: 'stock', name: 'stock' },
+                    { data: 'purchase_price', name: 'purchase_price' },
+                    { data: 'sale_price', name: 'sale_price' },
+                    { data: 'status', name: 'status', className: 'text-center' },
+                    { data: 'options', name: 'options', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search items, codes, categories...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ items",
+                    infoEmpty: "Showing 0 to 0 of 0 items",
+                    infoFiltered: "(filtered from _MAX_ total items)",
+                    zeroRecords: "No matching items found",
+                    emptyTable: "No items available"
+                }
+            });
+
+            // Filter by Status
+            $('#statusFilter').on('change', function() {
+                dataTable.ajax.reload();
+            });
+
             const itemForm = document.getElementById('itemForm');
             const modalTitle = document.getElementById('itemModalLabel');
             const submitBtn = document.getElementById('submitBtn');
@@ -367,91 +356,123 @@
                 imagePreviewContainer.classList.add('d-none');
             };
 
-            // Edit Item
-            document.querySelectorAll('.edit-item-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const storeId = this.dataset.store_id;
-                    const categoryId = this.dataset.category_id;
-                    const code = this.dataset.code;
-                    const unitId = this.dataset.unit_id;
-                    const brandId = this.dataset.brand_id;
-                    const price = this.dataset.price;
-                    const salePrice = this.dataset.sale_price;
-                    const stock = this.dataset.stock;
-                    const details = this.dataset.details;
-                    const picture = this.dataset.picture;
-                    let status = this.dataset.status;
-                    const position = this.dataset.position;
+            // Delegated Edit Item
+            $(document).on('click', '.edit-item-btn', function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const storeId = $(this).data('store_id');
+                const categoryId = $(this).data('category_id');
+                const code = $(this).data('code');
+                const unitId = $(this).data('unit_id');
+                const brandId = $(this).data('brand_id');
+                const price = $(this).data('price');
+                const salePrice = $(this).data('sale_price');
+                const stock = $(this).data('stock');
+                const details = $(this).data('details');
+                const picture = $(this).data('picture');
+                let status = $(this).data('status');
+                const position = $(this).data('position');
 
-                    if (status === "active" || status === "1" || status === "A") {
-                        status = "A";
-                    } else {
-                        status = "I";
-                    }
+                if (status === "active" || status === "1" || status === "A") {
+                    status = "A";
+                } else {
+                    status = "I";
+                }
 
-                    // Update form action for editing
-                    itemForm.action = `/items/${id}/update`;
-                    modalTitle.textContent = 'Edit Item';
-                    submitBtn.textContent = 'Update Item';
+                // Update form action for editing
+                itemForm.action = `/items/${id}/update`;
+                modalTitle.textContent = 'Edit Item';
+                submitBtn.textContent = 'Update Item';
 
-                    // Populate form fields
-                    itemName.value = name || '';
-                    itemStore.value = storeId || '';
-                    itemCategory.value = categoryId || '';
-                    itemCode.value = code || '';
-                    itemUnit.value = unitId || '';
-                    itemBrand.value = brandId || '';
-                    itemPrice.value = price || '0';
-                    itemSalePrice.value = salePrice || '0';
-                    itemDetails.value = details || '';
-                    itemStatus.value = status;
-                    itemPosition.value = position || '0';
+                // Populate form fields
+                itemName.value = name || '';
+                itemStore.value = storeId || '';
+                itemCategory.value = categoryId || '';
+                itemCode.value = code || '';
+                itemUnit.value = unitId || '';
+                itemBrand.value = brandId || '';
+                itemPrice.value = price || '0';
+                itemSalePrice.value = salePrice || '0';
+                itemDetails.value = details || '';
+                itemStatus.value = status;
+                itemPosition.value = position || '0';
 
-                    if (picture) {
-                        imagePreview.src = picture;
-                        imagePreviewContainer.classList.remove('d-none');
-                    } else {
-                        imagePreview.src = "";
-                        imagePreviewContainer.classList.add('d-none');
-                    }
-                });
+                if (picture) {
+                    imagePreview.src = picture;
+                    imagePreviewContainer.classList.remove('d-none');
+                } else {
+                    imagePreview.src = "";
+                    imagePreviewContainer.classList.add('d-none');
+                }
             });
 
-            // View Item Details
-            document.querySelectorAll('.view-item-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.getElementById('v_name').textContent = this.dataset.name || '-';
-                    document.getElementById('v_code').textContent = this.dataset.code || '-';
-                    document.getElementById('v_store').textContent = this.dataset.store || '-';
-                    document.getElementById('v_category').innerHTML = this.dataset.category || '-';
-                    document.getElementById('v_unit').textContent = this.dataset.unit || '-';
-                    document.getElementById('v_brand').textContent = this.dataset.brand || '-';
-                    document.getElementById('v_price').textContent = this.dataset.price || '0';
-                    document.getElementById('v_sale_price').textContent = this.dataset.sale_price || '0';
-                    document.getElementById('v_stock').textContent = this.dataset.stock || '0';
-                    document.getElementById('v_details').textContent = this.dataset.details || '-';
+            // Delegated View Item Details
+            $(document).on('click', '.view-item-btn', function() {
+                $('#v_name').text($(this).data('name') || '-');
+                $('#v_code').text($(this).data('code') || '-');
+                $('#v_store').text($(this).data('store') || '-');
+                $('#v_category').html($(this).data('category') || '-');
+                $('#v_unit').text($(this).data('unit') || '-');
+                $('#v_brand').text($(this).data('brand') || '-');
+                $('#v_price').text($(this).data('price') || '0');
+                $('#v_sale_price').text($(this).data('sale_price') || '0');
+                $('#v_stock').text($(this).data('stock') || '0');
+                $('#v_details').text($(this).data('details') || '-');
 
-                    const picture = this.dataset.picture;
-                    const vPicture = document.getElementById('v_picture');
-                    const vPictureContainer = document.getElementById('v_picture_container');
-                    if (picture) {
-                        vPicture.src = picture;
-                        vPictureContainer.classList.remove('d-none');
-                    } else {
-                        vPictureContainer.classList.add('d-none');
-                    }
+                const picture = $(this).data('picture');
+                if (picture) {
+                    $('#v_picture').attr('src', picture);
+                    $('#v_picture_container').removeClass('d-none');
+                } else {
+                    $('#v_picture_container').addClass('d-none');
+                }
 
-                    const status = this.dataset.status;
-                    const vStatus = document.getElementById('v_status');
-                    if (status === 'A' || status === 'active' || status === '1') {
-                        vStatus.innerHTML = '<span class="badge bg-success">Active</span>';
-                    } else {
-                        vStatus.innerHTML = '<span class="badge bg-danger">Inactive</span>';
+                const status = $(this).data('status');
+                if (status === 'A' || status === 'active' || status === '1') {
+                    $('#v_status').html('<span class="badge bg-success">Active</span>');
+                } else {
+                    $('#v_status').html('<span class="badge bg-danger">Inactive</span>');
+                }
+            });
+
+            // Delegated AJAX Delete with SweetAlert2
+            $(document).on('click', '.delete-item-ajax-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this item';
+
+                Swal.fire({
+                    title: 'Delete Item?',
+                    text: `Are you sure you want to delete "${name}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'Item has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete item.', 'error');
+                            }
+                        });
                     }
                 });
             });
         });
     </script>
-@endsection
+@endpush

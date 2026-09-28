@@ -8,23 +8,30 @@
         <div class="layout-container">
             <div class="layout-page">
                 <div class="card mt-5 shadow-sm rounded" style="margin: 31px;">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light border-bottom">
                         <h5 class="card-title mb-0 text-md-start text-center">Foods Management</h5>
-                        @can('food add')
-                            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                data-bs-target="#foodModal" onclick="resetFoodForm()">
-                                <i class="bx bx-plus icon-sm"></i>
-                                <span class="d-none d-sm-inline-block">Add New Food</span>
-                            </button>
-                        @endcan
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="statusFilter" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="">All Status</option>
+                                <option value="A">Active</option>
+                                <option value="I">Inactive</option>
+                            </select>
+                            @can('food add')
+                                <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#foodModal" onclick="resetFoodForm()">
+                                    <i class="bx bx-plus icon-sm"></i>
+                                    <span class="d-none d-sm-inline-block">Add New Food</span>
+                                </button>
+                            @endcan
+                        </div>
                     </div>
 
-                    <!-- Foods Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Foods Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100" id="foodsTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>#</th>
+                                    <th style="width: 50px;" class="text-center">#</th>
                                     <th>Food</th>
                                     <th>Code</th>
                                     <th>Category</th>
@@ -32,66 +39,12 @@
                                     <th>Stock</th>
                                     <th>Cost Price</th>
                                     <th>Sale Price</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Options</th>
+                                    <th class="text-center" style="width: 100px;">Status</th>
+                                    <th class="text-center" style="width: 130px;">Options</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($foods as $key => $food)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $food->name }}</td>
-                                        <td class="text-dark font-monospace fw-medium">{{ $food->code }}</td>
-                                        <td class="text-dark fw-medium">{!! $food->category ? $food->category->full_path : '-' !!}</td>
-                                        <td class="text-dark fw-medium">{{ $food->store->store ?? $food->store->name ?? '-' }}</td>
-                                        <td class="text-dark fw-bold text-primary">{{ number_format($food->stock ?? 0, 2) }}</td>
-                                        <td class="text-dark fw-medium">{{ number_format($food->cost_price, 2) }}</td>
-                                        <td class="text-dark fw-bold text-success">{{ number_format($food->price, 2) }}</td>
-                                        <td>
-                                            @if ($food->status == 'A' || $food->status == 'active' || $food->status === '1' || $food->status === 1)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-danger">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- View Details --}}
-                                                <button type="button" title="View Details"
-                                                    class="action-btn action-btn-view view-food-btn"
-                                                    data-id="{{ $food->id }}"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#viewFoodModal">
-                                                    <i class='bx bx-show'></i>
-                                                </button>
-
-                                                {{-- Edit --}}
-                                                @can('food edit')
-                                                    <button type="button" title="Edit"
-                                                        class="action-btn action-btn-edit edit-food-btn"
-                                                        data-id="{{ $food->id }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#foodModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete --}}
-                                                @can('food delete')
-                                                    <a href="{{ route('foods.delete', $food->id) }}" title="Delete"
-                                                        onclick="return confirm('Are you sure you want to delete this food item?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="10" class="text-center text-muted py-4">No food items available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -100,7 +53,7 @@
                     <div class="modal fade" id="foodModal" tabindex="-1" aria-labelledby="foodModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered" style="max-width: 1300px; width: 94%; margin: 1.75rem auto;">
                             <div class="modal-content">
-                                <form id="foodForm" action="{{ route('foods.store') }}" method="POST" enctype="multipart/form-data">
+                                <form id="foodForm" action="{{ route('foods.store') }}" method="POST" enctype="multipart/form-data" data-ajax-table="#foodsTable">
                                     @csrf
                                     <div class="modal-header border-bottom py-3 px-4 bg-light d-flex align-items-center justify-content-between">
                                         <h5 class="modal-title fw-bold m-0" id="foodModalLabel">Add New Food</h5>
@@ -321,6 +274,7 @@
     </div>
 
     <div class="layout-overlay layout-menu-toggle"></div>
+@endsection
 
     <!-- Hidden Template for New Recipe Row -->
     <template id="recipeRowTemplate">
@@ -368,8 +322,61 @@
         </tr>
     </template>
 
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        $(document).ready(function() {
+            // Server-Side Processing AJAX DataTable Setup for Foods
+            const dataTable = $('#foodsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.status_filter = $('#statusFilter').val();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Foods DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'food', name: 'food' },
+                    { data: 'code', name: 'code' },
+                    { data: 'category', name: 'category' },
+                    { data: 'store', name: 'store' },
+                    { data: 'stock', name: 'stock' },
+                    { data: 'cost_price', name: 'cost_price' },
+                    { data: 'sale_price', name: 'sale_price' },
+                    { data: 'status', name: 'status', className: 'text-center' },
+                    { data: 'options', name: 'options', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search foods, codes, categories...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ foods",
+                    infoEmpty: "Showing 0 to 0 of 0 foods",
+                    infoFiltered: "(filtered from _MAX_ total foods)",
+                    zeroRecords: "No matching foods found",
+                    emptyTable: "No foods available"
+                }
+            });
+
+            // Status Filter Change
+            $('#statusFilter').on('change', function() {
+                dataTable.ajax.reload();
+            });
             const foodForm = document.getElementById('foodForm');
             const defaultStoreRoute = "{{ route('foods.store') }}";
             const foodModalLabel = document.getElementById('foodModalLabel');
@@ -544,141 +551,176 @@
                 addNewRow();
             };
 
-            // Edit Food logic
-            document.querySelectorAll('.edit-food-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const foodId = this.dataset.id;
-                    
-                    fetch(`/foods/${foodId}/edit-data`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.status || !data.food) return;
+            // Delegated Edit Food logic
+            $(document).on('click', '.edit-food-btn', function() {
+                const foodId = $(this).data('id');
+                
+                fetch(`/foods/${foodId}/edit-data`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.status || !data.food) return;
 
-                            const f = data.food;
-                            foodForm.action = `/foods/${f.id}/update`;
-                            foodModalLabel.textContent = 'Edit Food';
-                            submitFoodBtn.textContent = 'Update Food';
+                        const f = data.food;
+                        foodForm.action = `/foods/${f.id}/update`;
+                        foodModalLabel.textContent = 'Edit Food';
+                        submitFoodBtn.textContent = 'Update Food';
 
-                            foodStore.value = f.store_id || '';
-                            foodName.value = f.name || '';
-                            foodCategory.value = f.category_id || '';
-                            foodCode.value = f.code || '';
-                            foodPrice.value = f.price || '0';
-                            foodStatus.value = f.status === 'A' || f.status === 'active' || f.status === '1' ? 'A' : 'I';
+                        foodStore.value = f.store_id || '';
+                        foodName.value = f.name || '';
+                        foodCategory.value = f.category_id || '';
+                        foodCode.value = f.code || '';
+                        foodPrice.value = f.price || '0';
+                        foodStatus.value = f.status === 'A' || f.status === 'active' || f.status === '1' ? 'A' : 'I';
 
-                            if (f.picture_url) {
-                                foodPicturePreview.src = f.picture_url;
-                                foodPicturePreviewContainer.classList.remove('d-none');
-                            } else {
-                                foodPicturePreview.src = '';
-                                foodPicturePreviewContainer.classList.add('d-none');
-                            }
+                        if (f.picture_url) {
+                            foodPicturePreview.src = f.picture_url;
+                            foodPicturePreviewContainer.classList.remove('d-none');
+                        } else {
+                            foodPicturePreview.src = '';
+                            foodPicturePreviewContainer.classList.add('d-none');
+                        }
 
-                            // Populate Recipe Ingredients
-                            recipeTableBody.innerHTML = '';
-                            if (f.ingredients && f.ingredients.length > 0) {
-                                f.ingredients.forEach(item => {
-                                    const template = document.getElementById('recipeRowTemplate').content.cloneNode(true);
-                                    const row = template.querySelector('.recipe-row');
+                        // Populate Recipe Ingredients
+                        recipeTableBody.innerHTML = '';
+                        if (f.ingredients && f.ingredients.length > 0) {
+                            f.ingredients.forEach(item => {
+                                const template = document.getElementById('recipeRowTemplate').content.cloneNode(true);
+                                const row = template.querySelector('.recipe-row');
 
-                                    const select = row.querySelector('.ingredient-select');
-                                    select.value = item.ingredient_id;
+                                const select = row.querySelector('.ingredient-select');
+                                select.value = item.ingredient_id;
 
-                                    row.querySelector('.row-usage-unit').textContent = item.usage_unit;
-                                    row.querySelector('.row-qty').value = parseFloat(item.quantity) || item.quantity;
-                                    const uPrice = parseFloat(item.unit_price) || 0;
-                                    row.querySelector('.row-price').value = (uPrice % 1 === 0) ? uPrice.toFixed(2) : parseFloat(uPrice.toFixed(4));
-                                    row.querySelector('.row-total').textContent = item.total_price.toFixed(2);
+                                row.querySelector('.row-usage-unit').textContent = item.usage_unit;
+                                row.querySelector('.row-qty').value = parseFloat(item.quantity) || item.quantity;
+                                const uPrice = parseFloat(item.unit_price) || 0;
+                                row.querySelector('.row-price').value = (uPrice % 1 === 0) ? uPrice.toFixed(2) : parseFloat(uPrice.toFixed(4));
+                                row.querySelector('.row-total').textContent = item.total_price.toFixed(2);
 
-                                    attachRowListeners(row);
-                                    recipeTableBody.appendChild(row);
-                                });
-                            } else {
-                                addNewRow();
-                            }
+                                attachRowListeners(row);
+                                recipeTableBody.appendChild(row);
+                            });
+                        } else {
+                            addNewRow();
+                        }
 
-                            renumberRows();
-                        })
-                        .catch(err => {
-                            console.error("Error fetching food data:", err);
-                        });
-                });
+                        renumberRows();
+                    })
+                    .catch(err => {
+                        console.error("Error fetching food data:", err);
+                    });
             });
 
-            // View Food Details Modal
-            document.querySelectorAll('.view-food-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const foodId = this.dataset.id;
-                    
-                    fetch(`/foods/${foodId}/edit-data`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.status || !data.food) return;
+            // Delegated View Food Details Modal
+            $(document).on('click', '.view-food-btn', function() {
+                const foodId = $(this).data('id');
+                
+                fetch(`/foods/${foodId}/edit-data`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.status || !data.food) return;
 
-                            const f = data.food;
-                            document.getElementById('v_food_name').textContent = f.name;
-                            document.getElementById('v_food_code').textContent = f.code;
-                            document.getElementById('v_food_stock').textContent = (f.stock !== undefined ? parseFloat(f.stock).toFixed(2) : '0.00');
-                            document.getElementById('v_food_sale_price').textContent = 'Rs ' + f.price.toFixed(2);
-                            document.getElementById('v_food_cost_price').textContent = 'Rs ' + f.cost_price.toFixed(2);
+                        const f = data.food;
+                        document.getElementById('v_food_name').textContent = f.name;
+                        document.getElementById('v_food_code').textContent = f.code;
+                        document.getElementById('v_food_stock').textContent = (f.stock !== undefined ? parseFloat(f.stock).toFixed(2) : '0.00');
+                        document.getElementById('v_food_sale_price').textContent = 'Rs ' + f.price.toFixed(2);
+                        document.getElementById('v_food_cost_price').textContent = 'Rs ' + f.cost_price.toFixed(2);
 
-                            // Find category and store names from selects
-                            const catOpt = foodCategory.querySelector(`option[value="${f.category_id}"]`);
-                            document.getElementById('v_food_category').textContent = catOpt ? catOpt.textContent.trim() : '-';
+                        // Find category and store names from selects
+                        const catOpt = foodCategory.querySelector(`option[value="${f.category_id}"]`);
+                        document.getElementById('v_food_category').textContent = catOpt ? catOpt.textContent.trim() : '-';
 
-                            const storeOpt = foodStore.querySelector(`option[value="${f.store_id}"]`);
-                            document.getElementById('v_food_store').textContent = storeOpt ? storeOpt.textContent.trim() : '-';
+                        const storeOpt = foodStore.querySelector(`option[value="${f.store_id}"]`);
+                        document.getElementById('v_food_store').textContent = storeOpt ? storeOpt.textContent.trim() : '-';
 
-                            // Picture
-                            const vPic = document.getElementById('v_food_picture');
-                            const vPicContainer = document.getElementById('v_food_picture_container');
-                            const vNoPic = document.getElementById('v_food_no_picture');
+                        // Picture
+                        const vPic = document.getElementById('v_food_picture');
+                        const vPicContainer = document.getElementById('v_food_picture_container');
+                        const vNoPic = document.getElementById('v_food_no_picture');
 
-                            if (f.picture_url) {
-                                vPic.src = f.picture_url;
-                                vPicContainer.classList.remove('d-none');
-                                vNoPic.classList.add('d-none');
-                            } else {
-                                vPic.src = '';
-                                vPicContainer.classList.add('d-none');
-                                vNoPic.classList.remove('d-none');
+                        if (f.picture_url) {
+                            vPic.src = f.picture_url;
+                            vPicContainer.classList.remove('d-none');
+                            vNoPic.classList.add('d-none');
+                        } else {
+                            vPic.src = '';
+                            vPicContainer.classList.add('d-none');
+                            vNoPic.classList.remove('d-none');
+                        }
+
+                        // Status
+                        const vStatus = document.getElementById('v_food_status');
+                        if (f.status === 'A' || f.status === 'active' || f.status === '1') {
+                            vStatus.innerHTML = '<span class="badge bg-success">Active</span>';
+                        } else {
+                            vStatus.innerHTML = '<span class="badge bg-danger">Inactive</span>';
+                        }
+
+                        // Populate Recipe
+                        const vTbody = document.getElementById('v_recipe_tbody');
+                        vTbody.innerHTML = '';
+                        let totalRecipeCost = 0;
+
+                        if (f.ingredients && f.ingredients.length > 0) {
+                            f.ingredients.forEach(item => {
+                                totalRecipeCost += item.total_price;
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td class="fw-semibold text-dark">${item.ingredient_name}</td>
+                                    <td class="text-center"><span class="badge bg-label-primary">${item.usage_unit}</span></td>
+                                    <td class="text-end text-dark">${item.quantity}</td>
+                                    <td class="text-end text-dark">${item.unit_price.toFixed(2)}</td>
+                                    <td class="text-end fw-bold text-dark">${item.total_price.toFixed(2)}</td>
+                                `;
+                                vTbody.appendChild(tr);
+                            });
+                        } else {
+                            vTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">No ingredients recorded.</td></tr>';
+                        }
+
+                        document.getElementById('v_recipe_grand_total').textContent = 'Rs ' + totalRecipeCost.toFixed(2);
+                    })
+                    .catch(err => {
+                        console.error("Error fetching food details:", err);
+                    });
+            });
+
+            // Delegated AJAX Delete with SweetAlert2
+            $(document).on('click', '.delete-food-ajax-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this food item';
+
+                Swal.fire({
+                    title: 'Delete Food Item?',
+                    text: `Are you sure you want to delete "${name}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'Food item has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete food item.', 'error');
                             }
-
-                            // Status
-                            const vStatus = document.getElementById('v_food_status');
-                            if (f.status === 'A' || f.status === 'active' || f.status === '1') {
-                                vStatus.innerHTML = '<span class="badge bg-success">Active</span>';
-                            } else {
-                                vStatus.innerHTML = '<span class="badge bg-danger">Inactive</span>';
-                            }
-
-                            // Populate Recipe
-                            const vTbody = document.getElementById('v_recipe_tbody');
-                            vTbody.innerHTML = '';
-                            let totalRecipeCost = 0;
-
-                            if (f.ingredients && f.ingredients.length > 0) {
-                                f.ingredients.forEach(item => {
-                                    totalRecipeCost += item.total_price;
-                                    const tr = document.createElement('tr');
-                                    tr.innerHTML = `
-                                        <td class="fw-semibold text-dark">${item.ingredient_name}</td>
-                                        <td class="text-center"><span class="badge bg-label-primary">${item.usage_unit}</span></td>
-                                        <td class="text-end text-dark">${item.quantity}</td>
-                                        <td class="text-end text-dark">${item.unit_price.toFixed(2)}</td>
-                                        <td class="text-end fw-bold text-dark">${item.total_price.toFixed(2)}</td>
-                                    `;
-                                    vTbody.appendChild(tr);
-                                });
-                            } else {
-                                vTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">No ingredients recorded.</td></tr>';
-                            }
-
-                            document.getElementById('v_recipe_grand_total').textContent = 'Rs ' + totalRecipeCost.toFixed(2);
-                        })
-                        .catch(err => {
-                            console.error("Error fetching food details:", err);
                         });
+                    }
                 });
             });
 
@@ -686,4 +728,4 @@
             addNewRow();
         });
     </script>
-@endsection
+@endpush

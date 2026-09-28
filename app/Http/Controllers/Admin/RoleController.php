@@ -24,8 +24,12 @@ class RoleController extends Controller
     }
 
 
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+            return $this->getRolesDataAjax($request);
+        }
+
         // Fetch roles and their permissions
         $roles = Role::with('permissions')->get();
         $permissions = Permission::orderBy('name')->get();
@@ -194,12 +198,132 @@ class RoleController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $role = Role::findOrFail($id);
-        $role->delete();
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        try {
+            $role = Role::findOrFail($id);
+            $role->delete();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        return redirect()->route('roles')->with('success', 'Role deleted successfully!');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Role deleted successfully!'
+                ]);
+            }
+
+            return redirect()->route('roles')->with('success', 'Role deleted successfully!');
+        } catch (\Exception $e) {
+            Log::error('Role Delete Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Failed to delete role.'
+                ], 500);
+            }
+            return redirect()->route('roles')->with('error', 'Failed to delete role.');
+        }
+    }
+
+    private function getRolesDataAjax(Request $request)
+    {
+        try {
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+            $searchValue = trim($request->input('search.value', ''));
+
+            $recordsTotal = Role::count();
+
+            $query = Role::with('permissions');
+
+            if (!empty($searchValue)) {
+                $query->where('name', 'like', "%{$searchValue}%");
+            }
+
+            $recordsFiltered = $query->count();
+
+            $query->orderBy('id', 'desc');
+
+            if ($length > 0) {
+                $query->skip($start)->take($length);
+            }
+
+            $roles = $query->get();
+
+            $currentUser = auth()->user();
+            $canEdit = $currentUser ? $currentUser->can('role edit') : true;
+            $canDelete = $currentUser ? $currentUser->can('role delete') : true;
+
+            $data = [];
+            foreach ($roles as $key => $role) {
+                $rowIndex = $start + $key + 1;
+                $roleNameSafe = htmlspecialchars($role->name, ENT_QUOTES, 'UTF-8');
+                $permNames = $role->permissions->pluck('name')->toArray();
+                $permCount = count($permNames);
+                $encodedPerms = htmlspecialchars(json_encode($permNames), ENT_QUOTES, 'UTF-8');
+
+                // Permissions Column HTML
+                if ($permCount > 0) {
+                    $permsHtml = '<button type="button" '
+                        . 'class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 view-permissions-modal-btn fw-semibold" '
+                        . 'data-role="' . $roleNameSafe . '" '
+                        . 'data-permissions=\'' . $encodedPerms . '\' '
+                        . 'data-bs-toggle="modal" data-bs-target="#viewRolePermissionsModal">'
+                        . '<i class="bx bx-shield-quarter"></i>'
+                        . '<span>' . $permCount . ' Permissions</span>'
+                        . '<span class="badge bg-primary text-white rounded-pill ms-1" style="font-size: 10px;">View</span>'
+                        . '</button>';
+                } else {
+                    $permsHtml = '<span class="badge bg-label-secondary text-muted">0 Permissions</span>';
+                }
+
+                // Actions Column HTML
+                $actionsHtml = '<div class="table-actions justify-content-center">';
+                if ($canEdit) {
+                    $actionsHtml .= '<button type="button" title="Edit" '
+                        . 'class="action-btn action-btn-edit edit-role-btn" '
+                        . 'data-id="' . $role->id . '" '
+                        . 'data-name="' . $roleNameSafe . '" '
+                        . 'data-permissions=\'' . $encodedPerms . '\' '
+                        . 'data-bs-toggle="modal" data-bs-target="#addRoleModal">'
+                        . '<i class="bx bx-edit"></i>'
+                        . '</button>';
+                }
+
+                if ($canDelete) {
+                    $actionsHtml .= '<button type="button" title="Delete" '
+                        . 'class="action-btn action-btn-delete delete-role-ajax-btn" '
+                        . 'data-url="' . route('roles.delete', $role->id) . '" '
+                        . 'data-name="' . $roleNameSafe . '">'
+                        . '<i class="bx bx-trash"></i>'
+                        . '</button>';
+                }
+                $actionsHtml .= '</div>';
+
+                $data[] = [
+                    'index' => $rowIndex,
+                    'name' => '<span class="fw-bold text-dark">' . $roleNameSafe . '</span>',
+                    'permissions' => $permsHtml,
+                    'actions' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Roles DataTable Error: ' . $e->getMessage());
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Error loading roles data'
+            ], 500);
+        }
     }
 }

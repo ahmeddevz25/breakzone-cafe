@@ -26,31 +26,39 @@
 <script>
     function confirmation(ev) {
         ev.preventDefault();
-        var urlToRedirect = ev.currentTarget.getAttribute('href');
-        console.log(urlToRedirect);
-        // Fallback or legacy swal check
-        if (typeof swal === 'function') {
-            swal({
-                    title: "Are you sure to cancel this product",
-                    text: "You will not be able to revert this!",
-                    icon: "warning",
-                    buttons: true,
-                    dangerMode: true,
-                })
-                .then((willCancel) => {
-                    if (willCancel) {
+        var target = ev.currentTarget;
+        var urlToRedirect = target.getAttribute('href') || target.dataset.url;
+        var title = target.dataset.title || 'Are you sure?';
+        var text = target.dataset.text || "You won't be able to revert this!";
 
-
-
-                        window.location.href = urlToRedirect;
-
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            focusCancel: true,
+            customClass: {
+                confirmButton: 'btn btn-danger me-2',
+                cancelButton: 'btn btn-outline-secondary'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Deleting...',
+                    text: 'Please wait...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
-
-
                 });
-
-
-        }
+                window.location.href = urlToRedirect;
+            }
+        });
     }
 </script>
 <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
@@ -84,8 +92,62 @@
 </script>
 <script>
     $(document).ready(function() {
-        $('#example').DataTable({
-            ordering: false
+        if ($('#example').length && !$.fn.DataTable.isDataTable('#example')) {
+            $('#example').DataTable({
+                ordering: false
+            });
+        }
+
+        // Safeguard: Remove any inline onclick="...confirm..." on delete elements so SweetAlert2 handles them cleanly
+        $('.action-btn-delete, .btn-delete, [data-confirm-delete]').removeAttr('onclick');
+
+        // Global SweetAlert2 Confirmation for all delete buttons/links across all modules
+        $(document).on('click', '.action-btn-delete, .btn-delete, .confirm-delete, [data-confirm-delete]', function(e) {
+            // Let dedicated AJAX delete handlers manage their own requests
+            if ($(this).hasClass('ajax-delete-btn') || $(this).hasClass('delete-store-ajax-btn') || $(this).hasClass('deletePlotBtn') || $(this).hasClass('deleteBlockBtn') || $(this).hasClass('deletePhaseBtn')) {
+                return;
+            }
+
+            e.preventDefault();
+            var btn = $(this);
+            var url = btn.attr('href') || btn.data('url');
+            var title = btn.data('title') || 'Are you sure?';
+            var text = btn.data('text') || "You won't be able to revert this!";
+            var confirmText = btn.data('confirm-text') || 'Yes, delete it!';
+            var cancelText = btn.data('cancel-text') || 'Cancel';
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: confirmText,
+                cancelButtonText: cancelText,
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    confirmButton: 'btn btn-danger me-2',
+                    cancelButton: 'btn btn-outline-secondary'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (url && url !== '#' && !url.startsWith('javascript:')) {
+                        Swal.fire({
+                            title: 'Deleting...',
+                            text: 'Please wait...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        window.location.href = url;
+                    } else if (btn.closest('form').length) {
+                        btn.closest('form').submit();
+                    }
+                }
+            });
         });
 
         // Global AJAX Delete Handler
@@ -206,10 +268,18 @@
                             }
                         }
 
-                        // Smoothly refresh after brief feedback delay
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 500);
+                        // If linked to an AJAX DataTable, reload table without refreshing entire page!
+                        var tableSelector = form.data('ajax-table');
+                        if (tableSelector && $(tableSelector).length && $.fn.DataTable.isDataTable(tableSelector)) {
+                            $(tableSelector).DataTable().ajax.reload(null, false);
+                            restoreSubmitBtn(submitBtn, originalBtnHtml);
+                            form[0].reset();
+                        } else {
+                            // Smoothly refresh after brief feedback delay
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 500);
+                        }
                     } else {
                         restoreSubmitBtn(submitBtn, originalBtnHtml);
                         toastr.error(response.message || 'An error occurred.');
@@ -250,6 +320,118 @@
             }
         }
 
-
     });
 </script>
+
+<!-- BreakZone SaaS Sidebar Controller -->
+<script>
+    (function() {
+        function initBreakZoneSidebar() {
+            var toggleBtn = document.getElementById('saas-sidebar-toggle');
+            var toggleIcon = document.getElementById('saas-sidebar-toggle-icon');
+            var mobileToggleBtn = document.getElementById('saas-mobile-toggle');
+            var html = document.documentElement;
+            var body = document.body;
+
+            function syncIconState() {
+                if (!toggleIcon) return;
+                var isCollapsed = html.classList.contains('layout-menu-collapsed');
+                if (window.innerWidth >= 1200) {
+                    if (isCollapsed) {
+                        toggleIcon.className = 'bx bx-chevron-right bx-sm align-middle';
+                        if (toggleBtn) toggleBtn.setAttribute('title', 'Expand Sidebar');
+                    } else {
+                        toggleIcon.className = 'bx bx-chevron-left bx-sm align-middle';
+                        if (toggleBtn) toggleBtn.setAttribute('title', 'Collapse Sidebar');
+                    }
+                } else {
+                    toggleIcon.className = 'bx bx-chevron-left bx-sm align-middle';
+                    if (toggleBtn) toggleBtn.setAttribute('title', 'Close Menu');
+                }
+            }
+
+            function toggleSidebarState() {
+                if (window.innerWidth >= 1200) {
+                    // Desktop: Toggle collapsed state
+                    var willCollapse = !html.classList.contains('layout-menu-collapsed');
+                    if (willCollapse) {
+                        html.classList.add('layout-menu-collapsed');
+                        body.classList.add('layout-menu-collapsed');
+                        try { localStorage.setItem('breakzone_sidebar_collapsed', 'true'); } catch(err) {}
+                    } else {
+                        html.classList.remove('layout-menu-collapsed');
+                        body.classList.remove('layout-menu-collapsed');
+                        try { localStorage.setItem('breakzone_sidebar_collapsed', 'false'); } catch(err) {}
+                    }
+
+                    // Reset menu body scroll position to top
+                    var menuInner = document.querySelector('.saas-menu-inner');
+                    if (menuInner) {
+                        menuInner.scrollTop = 0;
+                    }
+
+                    syncIconState();
+
+                    // Re-layout charts and data tables after smooth transition
+                    setTimeout(function() {
+                        window.dispatchEvent(new Event('resize'));
+                    }, 280);
+                } else {
+                    // Mobile: Toggle drawer
+                    html.classList.toggle('layout-menu-expanded');
+                    body.classList.toggle('layout-menu-expanded');
+                }
+            }
+
+            // Sync icon on startup
+            syncIconState();
+
+            // Toggle Button Click Handler (Arrow button)
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (window.innerWidth >= 1200) {
+                        toggleSidebarState();
+                    } else {
+                        // Mobile: Close drawer
+                        html.classList.remove('layout-menu-expanded');
+                        body.classList.remove('layout-menu-expanded');
+                    }
+                });
+            }
+
+            // Hamburger in Header (Works on both desktop and mobile!)
+            if (mobileToggleBtn) {
+                mobileToggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSidebarState();
+                });
+            }
+
+            // Overlay Click to close mobile drawer
+            $(document).on('click', '.layout-overlay', function() {
+                html.classList.remove('layout-menu-expanded');
+                body.classList.remove('layout-menu-expanded');
+            });
+
+            // Window resize watcher
+            var resizeTimer = null;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    syncIconState();
+                }, 150);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initBreakZoneSidebar);
+        } else {
+            initBreakZoneSidebar();
+        }
+    })();
+</script>
+

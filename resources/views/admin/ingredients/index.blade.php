@@ -8,104 +8,41 @@
         <div class="layout-container">
             <div class="layout-page">
                 <div class="card mt-5 shadow-sm rounded" style="margin: 31px;">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light border-bottom">
                         <h5 class="card-title mb-0 text-md-start text-center">Ingredients Management</h5>
-                        @can('ingredient add')
-                            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                data-bs-target="#ingredientModal" onclick="resetIngredientForm()">
-                                <i class="bx bx-plus icon-sm"></i>
-                                <span class="d-none d-sm-inline-block">Add New Ingredient</span>
-                            </button>
-                        @endcan
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="statusFilter" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="">All Status</option>
+                                <option value="A">Active</option>
+                                <option value="I">Inactive</option>
+                            </select>
+                            @can('ingredient add')
+                                <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#ingredientModal" onclick="resetIngredientForm()">
+                                    <i class="bx bx-plus icon-sm"></i>
+                                    <span class="d-none d-sm-inline-block">Add New Ingredient</span>
+                                </button>
+                            @endcan
+                        </div>
                     </div>
 
-                    <!-- Ingredients Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle table-striped border-top" id="example">
+                    <!-- Ingredients Table (Server-Side AJAX) -->
+                    <div class="table-responsive p-3">
+                        <table class="table table-hover align-middle table-striped border-top w-100" id="ingredientsTable">
                             <thead class="table-light">
                                 <tr class="text-muted text-uppercase small">
-                                    <th>#</th>
+                                    <th style="width: 50px;" class="text-center">#</th>
                                     <th>Ingredient</th>
                                     <th>Buying Unit</th>
                                     <th>Usage Unit</th>
                                     <th>Purchase Price</th>
                                     <th>Stock</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Options</th>
+                                    <th class="text-center" style="width: 100px;">Status</th>
+                                    <th class="text-center" style="width: 130px;">Options</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($ingredients as $key => $ingredient)
-                                    <tr class="text-dark">
-                                        <td class="text-dark fw-medium">{{ $key + 1 }}</td>
-                                        <td class="fw-bold text-dark">{{ $ingredient->name }}</td>
-                                        <td class="text-dark fw-medium">{{ $ingredient->buyingUnit->unit ?? $ingredient->buyingUnit->name ?? '-' }}</td>
-                                        <td class="text-dark fw-medium">{{ $ingredient->usageUnit->unit ?? $ingredient->usageUnit->name ?? '-' }}</td>
-                                        <td class="text-dark fw-medium">{{ number_format($ingredient->purchase_price, 2) }}</td>
-                                        <td class="text-dark fw-bold">{{ number_format($ingredient->stock, 2) }}</td>
-                                        <td>
-                                            @if ($ingredient->status == 'A' || $ingredient->status == 'active' || $ingredient->status === '1' || $ingredient->status === 1)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-danger">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="table-actions">
-                                                {{-- View Details --}}
-                                                <button type="button" title="View Details"
-                                                    class="action-btn action-btn-view view-ingredient-btn"
-                                                    data-name="{{ $ingredient->name }}"
-                                                    data-store="{{ $ingredient->store->store ?? $ingredient->store->name ?? '-' }}"
-                                                    data-buying_unit="{{ $ingredient->buyingUnit->unit ?? $ingredient->buyingUnit->name ?? '-' }}"
-                                                    data-usage_unit="{{ $ingredient->usageUnit->unit ?? $ingredient->usageUnit->name ?? '-' }}"
-                                                    data-conversion="{{ $ingredient->conversion_value ?? 0 }}"
-                                                    data-purchase_price="{{ number_format($ingredient->purchase_price, 2) }}"
-                                                    data-stock="{{ number_format($ingredient->stock, 2) }}"
-                                                    data-details="{{ $ingredient->details ?? '-' }}"
-                                                    data-picture="{{ $ingredient->picture_url ?? '' }}"
-                                                    data-status="{{ $ingredient->status }}"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#viewIngredientModal">
-                                                    <i class='bx bx-show'></i>
-                                                </button>
-                                                {{-- Edit --}}
-                                                @can('ingredient edit')
-                                                    <button type="button" title="Edit"
-                                                        class="action-btn action-btn-edit edit-ingredient-btn"
-                                                        data-id="{{ $ingredient->id }}"
-                                                        data-name="{{ $ingredient->name }}"
-                                                        data-store_id="{{ $ingredient->store_id }}"
-                                                        data-buying_unit_id="{{ $ingredient->buying_unit_id }}"
-                                                        data-usage_unit_id="{{ $ingredient->usage_unit_id }}"
-                                                        data-conversion_value="{{ $ingredient->conversion_value }}"
-                                                        data-purchase_price="{{ $ingredient->purchase_price }}"
-                                                        data-stock="{{ $ingredient->stock }}"
-                                                        data-details="{{ $ingredient->details }}"
-                                                        data-picture="{{ $ingredient->picture_url }}"
-                                                        data-status="{{ $ingredient->status }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#ingredientModal">
-                                                        <i class='bx bx-edit'></i>
-                                                    </button>
-                                                @endcan
-
-                                                {{-- Delete --}}
-                                                @can('ingredient delete')
-                                                    <a href="{{ route('ingredients.delete', $ingredient->id) }}" title="Delete"
-                                                        onclick="return confirm('Are you sure you want to delete this ingredient?')"
-                                                        class="action-btn action-btn-delete">
-                                                        <i class='bx bx-trash'></i>
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">No ingredients available.</td>
-                                    </tr>
-                                @endforelse
+                                {{-- Dynamically populated via DataTables Server-Side AJAX --}}
                             </tbody>
                         </table>
                     </div>
@@ -114,7 +51,7 @@
                     <div class="modal fade" id="ingredientModal" tabindex="-1" aria-labelledby="ingredientModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
-                                <form id="ingredientForm" action="{{ route('ingredients.store') }}" method="POST" enctype="multipart/form-data">
+                                <form id="ingredientForm" action="{{ route('ingredients.store') }}" method="POST" enctype="multipart/form-data" data-ajax-table="#ingredientsTable">
                                     @csrf
                                     <div class="modal-header border-bottom py-3">
                                         <h5 class="modal-title fw-bold" id="ingredientModalLabel">Add New Ingredient</h5>
@@ -288,9 +225,62 @@
     </div>
     
     <div class="layout-overlay layout-menu-toggle"></div>
+@endsection
 
+@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        $(document).ready(function() {
+            // Server-Side Processing AJAX DataTable Setup for Ingredients
+            const dataTable = $('#ingredientsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                searchDelay: 300,
+                ordering: false,
+                autoWidth: false,
+                pageLength: 10,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.status_filter = $('#statusFilter').val();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Ingredients DataTable Error:', error, xhr.responseText);
+                    }
+                },
+                dom: 'lfrtip',
+                columns: [
+                    { data: 'index', name: 'index', orderable: false, searchable: false, className: 'text-center' },
+                    { data: 'ingredient', name: 'ingredient' },
+                    { data: 'buying_unit', name: 'buying_unit' },
+                    { data: 'usage_unit', name: 'usage_unit' },
+                    { data: 'purchase_price', name: 'purchase_price' },
+                    { data: 'stock', name: 'stock' },
+                    { data: 'status', name: 'status', className: 'text-center' },
+                    { data: 'options', name: 'options', orderable: false, searchable: false, className: 'text-center' }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search ingredients, units, stores...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ ingredients",
+                    infoEmpty: "Showing 0 to 0 of 0 ingredients",
+                    infoFiltered: "(filtered from _MAX_ total ingredients)",
+                    zeroRecords: "No matching ingredients found",
+                    emptyTable: "No ingredients available"
+                }
+            });
+
+            // Status Filter Change
+            $('#statusFilter').on('change', function() {
+                dataTable.ajax.reload();
+            });
+
             const form = document.getElementById('ingredientForm');
             const modalTitle = document.getElementById('ingredientModalLabel');
             const submitBtn = document.getElementById('submitBtn');
@@ -321,86 +311,116 @@
                 previewImg.src = '';
             };
 
-            // Edit Ingredient
-            document.querySelectorAll('.edit-ingredient-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const storeId = this.dataset.store_id;
-                    const buyingUnitId = this.dataset.buying_unit_id;
-                    const usageUnitId = this.dataset.usage_unit_id;
-                    const conversion = this.dataset.conversion_value;
-                    const price = this.dataset.purchase_price;
-                    const stock = this.dataset.stock;
-                    const details = this.dataset.details;
-                    const picture = this.dataset.picture;
-                    let status = this.dataset.status;
-                    if (status === 'active' || status === '1' || status === 'A') {
-                        status = 'A';
-                    } else {
-                        status = 'I';
-                    }
+            // Delegated Edit Ingredient
+            $(document).on('click', '.edit-ingredient-btn', function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const storeId = $(this).data('store_id');
+                const buyingUnitId = $(this).data('buying_unit_id');
+                const usageUnitId = $(this).data('usage_unit_id');
+                const conversion = $(this).data('conversion_value');
+                const price = $(this).data('purchase_price');
+                const stock = $(this).data('stock');
+                const details = $(this).data('details');
+                const picture = $(this).data('picture');
+                let status = $(this).data('status');
+                if (status === 'active' || status === '1' || status === 'A') {
+                    status = 'A';
+                } else {
+                    status = 'I';
+                }
 
-                    form.action = `/ingredients/${id}/update`;
-                    modalTitle.textContent = 'Edit Ingredient';
-                    submitBtn.textContent = 'Update Ingredient';
+                form.action = `/ingredients/${id}/update`;
+                modalTitle.textContent = 'Edit Ingredient';
+                submitBtn.textContent = 'Update Ingredient';
 
-                    nameInput.value = name || '';
-                    storeInput.value = storeId || '';
-                    buyingUnitInput.value = buyingUnitId || '';
-                    usageUnitInput.value = usageUnitId || '';
-                    conversionInput.value = conversion || '0';
-                    priceInput.value = price || '0';
-                    detailsInput.value = details || '';
-                    statusInput.value = status;
-                    pictureInput.value = '';
+                nameInput.value = name || '';
+                storeInput.value = storeId || '';
+                buyingUnitInput.value = buyingUnitId || '';
+                usageUnitInput.value = usageUnitId || '';
+                conversionInput.value = conversion || '0';
+                priceInput.value = price || '0';
+                detailsInput.value = details || '';
+                statusInput.value = status;
+                pictureInput.value = '';
 
-                    if (picture) {
-                        previewImg.src = picture;
-                        previewContainer.style.display = 'block';
-                    } else {
-                        previewContainer.style.display = 'none';
-                        previewImg.src = '';
-                    }
-                });
+                if (picture) {
+                    previewImg.src = picture;
+                    previewContainer.style.display = 'block';
+                } else {
+                    previewContainer.style.display = 'none';
+                    previewImg.src = '';
+                }
             });
 
-            // View Ingredient Details
-            document.querySelectorAll('.view-ingredient-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.getElementById('v_ing_name').textContent = this.dataset.name || '-';
-                    document.getElementById('v_ing_store').textContent = this.dataset.store || '-';
-                    document.getElementById('v_ing_buying_unit').textContent = this.dataset.buying_unit || '-';
-                    document.getElementById('v_ing_usage_unit').textContent = this.dataset.usage_unit || '-';
-                    document.getElementById('v_ing_conversion').textContent = this.dataset.conversion || '0';
-                    document.getElementById('v_ing_price').textContent = this.dataset.purchase_price || '0.00';
-                    document.getElementById('v_ing_stock').textContent = this.dataset.stock || '0.00';
-                    document.getElementById('v_ing_details').textContent = this.dataset.details || '-';
+            // Delegated View Ingredient Details
+            $(document).on('click', '.view-ingredient-btn', function() {
+                $('#v_ing_name').text($(this).data('name') || '-');
+                $('#v_ing_store').text($(this).data('store') || '-');
+                $('#v_ing_buying_unit').text($(this).data('buying_unit') || '-');
+                $('#v_ing_usage_unit').text($(this).data('usage_unit') || '-');
+                $('#v_ing_conversion').text($(this).data('conversion') || '0');
+                $('#v_ing_price').text($(this).data('purchase_price') || '0.00');
+                $('#v_ing_stock').text($(this).data('stock') || '0.00');
+                $('#v_ing_details').text($(this).data('details') || '-');
 
-                    const picture = this.dataset.picture;
-                    const vPicture = document.getElementById('v_ing_picture');
-                    const vPictureContainer = document.getElementById('v_ing_picture_container');
-                    const vNoPicture = document.getElementById('v_ing_no_picture');
+                const picture = $(this).data('picture');
+                if (picture && picture.trim() !== '') {
+                    $('#v_ing_picture').attr('src', picture);
+                    $('#v_ing_picture_container').removeClass('d-none');
+                    $('#v_ing_no_picture').addClass('d-none');
+                } else {
+                    $('#v_ing_picture').attr('src', '');
+                    $('#v_ing_picture_container').addClass('d-none');
+                    $('#v_ing_no_picture').removeClass('d-none');
+                }
 
-                    if (picture && picture.trim() !== '') {
-                        vPicture.src = picture;
-                        vPictureContainer.classList.remove('d-none');
-                        vNoPicture.classList.add('d-none');
-                    } else {
-                        vPicture.src = '';
-                        vPictureContainer.classList.add('d-none');
-                        vNoPicture.classList.remove('d-none');
-                    }
+                const status = $(this).data('status');
+                if (status === 'A' || status === 'active' || status === '1') {
+                    $('#v_ing_status').html('<span class="badge bg-success">Active</span>');
+                } else {
+                    $('#v_ing_status').html('<span class="badge bg-danger">Inactive</span>');
+                }
+            });
 
-                    const status = this.dataset.status;
-                    const vStatus = document.getElementById('v_ing_status');
-                    if (status === 'A' || status === 'active' || status === '1') {
-                        vStatus.innerHTML = '<span class="badge bg-success">Active</span>';
-                    } else {
-                        vStatus.innerHTML = '<span class="badge bg-danger">Inactive</span>';
+            // Delegated AJAX Delete with SweetAlert2
+            $(document).on('click', '.delete-ingredient-ajax-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name') || 'this ingredient';
+
+                Swal.fire({
+                    title: 'Delete Ingredient?',
+                    text: `Are you sure you want to delete "${name}"? You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                _method: 'DELETE'
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                Swal.fire('Deleted!', res.message || 'Ingredient has been deleted.', 'success');
+                                dataTable.ajax.reload(null, false);
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Failed to delete ingredient.', 'error');
+                            }
+                        });
                     }
                 });
             });
         });
     </script>
-@endsection
+@endpush
