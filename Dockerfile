@@ -38,9 +38,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Expose port (Render sets $PORT, defaults to 10000)
-ENV PORT=10000
-EXPOSE 10000
+# Expose port (defaults to 8080)
+ENV PORT=8080
+EXPOSE 8080
 
 # Copy startup script and fix Windows line endings
 COPY render-start.sh /usr/local/bin/render-start.sh
