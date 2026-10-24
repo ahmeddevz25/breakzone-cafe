@@ -45,6 +45,11 @@ class Purchase extends Model
         return $this->hasMany(PurchaseDetail::class, 'purchase_id');
     }
 
+    public function returns()
+    {
+        return $this->hasMany(PurchaseReturn::class, 'purchase_id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

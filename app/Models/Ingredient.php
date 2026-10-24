@@ -14,6 +14,7 @@ class Ingredient extends Model
 
     protected $fillable = [
         'store_id',
+        'supplier_id',
         'name',
         'buying_unit_id',
         'usage_unit_id',
@@ -39,6 +40,11 @@ class Ingredient extends Model
     public function store()
     {
         return $this->belongsTo(Store::class, 'store_id');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function buyingUnit()

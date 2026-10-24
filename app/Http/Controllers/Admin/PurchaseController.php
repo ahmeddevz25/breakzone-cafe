@@ -538,20 +538,218 @@ class PurchaseController extends Controller
     }
 
     /**
+     * AJAX endpoint to fetch dynamic suppliers and catalog products for a given store
+     */
+    public function getStoreData(Request $request)
+    {
+        $storeId = $request->query('store_id');
+        $supplierId = $request->query('supplier_id');
+
+        if (!$storeId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Store ID is required'
+            ], 400);
+        }
+
+        // 1. Identify suppliers associated with this store (from past purchases or item/ingredient supplier_id)
+        $purchaseSupplierIds = Purchase::where('store_id', $storeId)->pluck('supplier_id')->filter()->unique()->toArray();
+        $itemSupplierIds = Item::where('store_id', $storeId)->whereNotNull('supplier_id')->pluck('supplier_id')->filter()->unique()->toArray();
+        $ingSupplierIds = Ingredient::where('store_id', $storeId)->whereNotNull('supplier_id')->pluck('supplier_id')->filter()->unique()->toArray();
+        $storeSupplierIds = array_values(array_unique(array_merge($purchaseSupplierIds, $itemSupplierIds, $ingSupplierIds)));
+
+        $allSuppliers = Supplier::where('status', 'A')->orWhere('status', '1')->orderBy('name')->get();
+        if ($allSuppliers->isEmpty()) {
+            $allSuppliers = Supplier::orderBy('name')->get();
+        }
+
+        $suppliersList = [];
+        foreach ($allSuppliers as $sup) {
+            $isStoreSupplier = in_array($sup->id, $storeSupplierIds);
+            $pastPurchasesCount = Purchase::where('store_id', $storeId)->where('supplier_id', $sup->id)->count();
+
+            $suppliersList[] = [
+                'id' => $sup->id,
+                'name' => $sup->name,
+                'company' => $sup->company,
+                'is_store_supplier' => $isStoreSupplier,
+                'past_purchases_count' => $pastPurchasesCount,
+            ];
+        }
+
+        // Sort suppliers: store suppliers first, then alphabetical
+        usort($suppliersList, function ($a, $b) {
+            if ($a['is_store_supplier'] === $b['is_store_supplier']) {
+                return strcmp($a['name'], $b['name']);
+            }
+            return $a['is_store_supplier'] ? -1 : 1;
+        });
+
+        // 2. Fetch items for this store
+        $itemsQuery = Item::where('store_id', $storeId)
+            ->where(function ($q) {
+                $q->where('status', 'A')->orWhere('status', '1');
+            })
+            ->with(['unit', 'supplier'])
+            ->orderBy('name')
+            ->get();
+
+        $items = [];
+        foreach ($itemsQuery as $it) {
+            $stock = max(0, (float)($it->stock ?? 0));
+
+            // Price: check latest purchase from selected supplier if given, or fallback
+            $price = (float)$it->price;
+            $isSuppliedBySelected = false;
+
+            if ($supplierId) {
+                $lastSupplierPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                    $q->where('store_id', $storeId)->where('supplier_id', $supplierId);
+                })->where('item_id', $it->id)->latest('id')->value('price');
+
+                if ($lastSupplierPrice !== null) {
+                    $price = (float)$lastSupplierPrice;
+                    $isSuppliedBySelected = true;
+                } elseif ($it->supplier_id == $supplierId) {
+                    $isSuppliedBySelected = true;
+                }
+            }
+
+            $items[] = [
+                'id' => $it->id,
+                'name' => $it->name,
+                'code' => $it->code,
+                'unit_id' => $it->unit_id,
+                'unit_name' => $it->unit ? $it->unit->unit : '-',
+                'stock' => $stock,
+                'price' => $price,
+                'supplier_id' => $it->supplier_id,
+                'supplier_name' => $it->supplier ? $it->supplier->name : null,
+                'is_supplied_by_selected' => $isSuppliedBySelected,
+            ];
+        }
+
+        // 3. Fetch ingredients for this store
+        $ingredientsQuery = Ingredient::where('store_id', $storeId)
+            ->where(function ($q) {
+                $q->where('status', 'A')->orWhere('status', '1');
+            })
+            ->with(['buyingUnit', 'supplier'])
+            ->orderBy('name')
+            ->get();
+
+        $ingredients = [];
+        foreach ($ingredientsQuery as $ing) {
+            $stock = max(0, (float)($ing->stock ?? 0));
+
+            $price = (float)$ing->purchase_price;
+            $isSuppliedBySelected = false;
+
+            if ($supplierId) {
+                $lastSupplierPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                    $q->where('store_id', $storeId)->where('supplier_id', $supplierId);
+                })->where('ingredient_id', $ing->id)->latest('id')->value('price');
+
+                if ($lastSupplierPrice !== null) {
+                    $price = (float)$lastSupplierPrice;
+                    $isSuppliedBySelected = true;
+                } elseif ($ing->supplier_id == $supplierId) {
+                    $isSuppliedBySelected = true;
+                }
+            }
+
+            $ingredients[] = [
+                'id' => $ing->id,
+                'name' => $ing->name,
+                'unit_id' => $ing->buying_unit_id,
+                'unit_name' => $ing->buyingUnit ? $ing->buyingUnit->unit : '-',
+                'stock' => $stock,
+                'price' => $price,
+                'supplier_id' => $ing->supplier_id,
+                'is_supplied_by_selected' => $isSuppliedBySelected,
+            ];
+        }
+
+        // 4. Fetch foods for this store
+        $foodsQuery = Food::where('store_id', $storeId)
+            ->where(function ($q) {
+                $q->where('status', 'A')->orWhere('status', '1');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $foods = [];
+        foreach ($foodsQuery as $fd) {
+            $stock = max(0, (float)($fd->stock ?? 0));
+
+            $price = (float)($fd->cost_price > 0 ? $fd->cost_price : $fd->price);
+            $isSuppliedBySelected = false;
+
+            if ($supplierId) {
+                $lastSupplierPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                    $q->where('store_id', $storeId)->where('supplier_id', $supplierId);
+                })->where('food_id', $fd->id)->latest('id')->value('price');
+
+                if ($lastSupplierPrice !== null) {
+                    $price = (float)$lastSupplierPrice;
+                    $isSuppliedBySelected = true;
+                }
+            }
+
+            $foods[] = [
+                'id' => $fd->id,
+                'name' => $fd->name,
+                'code' => $fd->code,
+                'unit_id' => null,
+                'unit_name' => 'Serving',
+                'stock' => $stock,
+                'price' => $price,
+                'is_supplied_by_selected' => $isSuppliedBySelected,
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'store_id' => (int)$storeId,
+            'supplier_id' => $supplierId ? (int)$supplierId : null,
+            'suppliers' => $suppliersList,
+            'items' => $items,
+            'ingredients' => $ingredients,
+            'foods' => $foods,
+        ]);
+    }
+
+    /**
      * AJAX endpoint to fetch real-time product price, stock, and unit
      */
     public function getProductInfo(Request $request)
     {
         $type = $request->query('type');
         $id = $request->query('id');
+        $storeId = $request->query('store_id');
+        $supplierId = $request->query('supplier_id');
 
         if ($type === 'item') {
             $item = Item::with('unit')->find($id);
             if ($item) {
+                $stock = max(0, (float)($item->stock ?? 0));
+
+                $price = (float)$item->price;
+                if ($supplierId) {
+                    $lastPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                        if ($storeId) $q->where('store_id', $storeId);
+                        $q->where('supplier_id', $supplierId);
+                    })->where('item_id', $id)->latest('id')->value('price');
+
+                    if ($lastPrice !== null) {
+                        $price = (float)$lastPrice;
+                    }
+                }
+
                 return response()->json([
                     'status' => true,
-                    'price' => (float)$item->price,
-                    'stock' => max(0, (float)($item->stock ?? 0)),
+                    'price' => $price,
+                    'stock' => $stock,
                     'unit_id' => $item->unit_id,
                     'unit_name' => $item->unit ? $item->unit->unit : '-',
                 ]);
@@ -559,10 +757,24 @@ class PurchaseController extends Controller
         } elseif ($type === 'ingredient') {
             $ing = Ingredient::with('buyingUnit')->find($id);
             if ($ing) {
+                $stock = max(0, (float)($ing->stock ?? 0));
+
+                $price = (float)$ing->purchase_price;
+                if ($supplierId) {
+                    $lastPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                        if ($storeId) $q->where('store_id', $storeId);
+                        $q->where('supplier_id', $supplierId);
+                    })->where('ingredient_id', $id)->latest('id')->value('price');
+
+                    if ($lastPrice !== null) {
+                        $price = (float)$lastPrice;
+                    }
+                }
+
                 return response()->json([
                     'status' => true,
-                    'price' => (float)$ing->purchase_price,
-                    'stock' => max(0, (float)($ing->stock ?? 0)),
+                    'price' => $price,
+                    'stock' => $stock,
                     'unit_id' => $ing->buying_unit_id,
                     'unit_name' => $ing->buyingUnit ? $ing->buyingUnit->unit : '-',
                 ]);
@@ -570,10 +782,24 @@ class PurchaseController extends Controller
         } elseif ($type === 'food') {
             $food = Food::find($id);
             if ($food) {
+                $stock = max(0, (float)($food->stock ?? 0));
+
+                $price = (float)($food->cost_price > 0 ? $food->cost_price : $food->price);
+                if ($supplierId) {
+                    $lastPrice = PurchaseDetail::whereHas('purchase', function ($q) use ($storeId, $supplierId) {
+                        if ($storeId) $q->where('store_id', $storeId);
+                        $q->where('supplier_id', $supplierId);
+                    })->where('food_id', $id)->latest('id')->value('price');
+
+                    if ($lastPrice !== null) {
+                        $price = (float)$lastPrice;
+                    }
+                }
+
                 return response()->json([
                     'status' => true,
-                    'price' => (float)($food->cost_price > 0 ? $food->cost_price : $food->price),
-                    'stock' => max(0, (float)($food->stock ?? 0)),
+                    'price' => $price,
+                    'stock' => $stock,
                     'unit_id' => null,
                     'unit_name' => 'Serving',
                 ]);

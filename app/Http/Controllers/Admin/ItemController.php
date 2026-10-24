@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\Store;
+use App\Models\Supplier;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -33,8 +34,9 @@ class ItemController extends Controller
             $categories = Category::orderBy('position', 'asc')->orderBy('id', 'asc')->get();
             $units = Unit::orderBy('position', 'asc')->orderBy('id', 'asc')->get();
             $brands = Brand::orderBy('position', 'asc')->orderBy('id', 'asc')->get();
+            $suppliers = Supplier::where('status', 'A')->orWhere('status', '1')->orderBy('name', 'asc')->get();
 
-            return view('admin.items.index', compact('stores', 'categories', 'units', 'brands'));
+            return view('admin.items.index', compact('stores', 'categories', 'units', 'brands', 'suppliers'));
         } catch (\Exception $e) {
             Log::error('Item Index Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Something went wrong while fetching items.');
@@ -52,7 +54,7 @@ class ItemController extends Controller
 
             $recordsTotal = Item::count();
 
-            $query = Item::with(['store', 'category', 'unit', 'brand']);
+            $query = Item::with(['store', 'category', 'unit', 'brand', 'supplier']);
 
             if (!empty($statusFilter)) {
                 $query->where('status', $statusFilter);
@@ -67,6 +69,9 @@ class ItemController extends Controller
                       })
                       ->orWhereHas('store', function ($sq) use ($searchValue) {
                           $sq->where('store', 'like', "%{$searchValue}%");
+                      })
+                      ->orWhereHas('supplier', function ($supq) use ($searchValue) {
+                          $supq->where('name', 'like', "%{$searchValue}%");
                       });
 
                     if (stripos('Active', $searchValue) !== false) {
@@ -98,6 +103,7 @@ class ItemController extends Controller
                 $itemCode = e($item->code ?? '');
                 $categoryPath = $item->category ? $item->category->full_path : '-';
                 $storeName = $item->store ? ($item->store->store ?? $item->store->name ?? '-') : '-';
+                $supplierName = $item->supplier ? ($item->supplier->name ?? '-') : '-';
                 $unitName = $item->unit ? ($item->unit->unit ?? $item->unit->name ?? '-') : '-';
                 $brandName = $item->brand ? ($item->brand->name ?? '-') : '-';
                 $pictureUrl = $item->picture_url;
@@ -111,7 +117,11 @@ class ItemController extends Controller
                 }
                 $itemHtml .= '<div class="d-flex flex-column"><span class="fw-bold text-dark">' . $itemName . '</span>';
                 if ($storeName !== '-') {
-                    $itemHtml .= '<small class="text-muted"><i class="bx bx-store-alt me-1"></i>' . e($storeName) . '</small>';
+                    $itemHtml .= '<small class="text-muted"><i class="bx bx-store-alt me-1"></i>' . e($storeName);
+                    if ($supplierName !== '-') {
+                        $itemHtml .= ' &bull; <i class="bx bx-user me-1"></i>' . e($supplierName);
+                    }
+                    $itemHtml .= '</small>';
                 }
                 $itemHtml .= '</div></div>';
 
@@ -128,6 +138,7 @@ class ItemController extends Controller
                 $actionsHtml .= '<button type="button" title="View Details" class="action-btn action-btn-view view-item-btn" '
                     . 'data-name="' . $itemName . '" '
                     . 'data-store="' . e($storeName) . '" '
+                    . 'data-supplier="' . e($supplierName) . '" '
                     . 'data-category="' . e($categoryPath) . '" '
                     . 'data-code="' . $itemCode . '" '
                     . 'data-unit="' . e($unitName) . '" '
@@ -147,6 +158,7 @@ class ItemController extends Controller
                         . 'data-id="' . $item->id . '" '
                         . 'data-name="' . $itemName . '" '
                         . 'data-store_id="' . $item->store_id . '" '
+                        . 'data-supplier_id="' . ($item->supplier_id ?? '') . '" '
                         . 'data-category_id="' . $item->category_id . '" '
                         . 'data-code="' . $itemCode . '" '
                         . 'data-unit_id="' . $item->unit_id . '" '
@@ -208,6 +220,7 @@ class ItemController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'store_id' => 'required|exists:cafe_stores,id',
+            'supplier_id' => 'nullable|exists:cafe_suppliers,id',
             'category_id' => 'required|exists:cafe_categories,id',
             'code' => 'required|string|max:20|unique:cafe_items,code',
             'unit_id' => 'required|exists:cafe_units,id',
@@ -223,6 +236,7 @@ class ItemController extends Controller
 
         try {
             $data = $request->except(['picture', 'stock']);
+            $data['supplier_id'] = $request->input('supplier_id') ?: null;
             $data['price'] = $request->input('price') ?? $request->input('purchase_price') ?? 0;
             $data['sale_price'] = $request->input('sale_price') ?? 0;
             $data['stock'] = 0;
@@ -262,6 +276,7 @@ class ItemController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'store_id' => 'required|exists:cafe_stores,id',
+            'supplier_id' => 'nullable|exists:cafe_suppliers,id',
             'category_id' => 'required|exists:cafe_categories,id',
             'code' => 'required|string|max:20|unique:cafe_items,code,' . $id,
             'unit_id' => 'required|exists:cafe_units,id',
@@ -278,7 +293,7 @@ class ItemController extends Controller
         try {
             $item = Item::findOrFail($id);
             $data = $request->except(['picture', 'stock']);
-
+            $data['supplier_id'] = $request->input('supplier_id') ?: null;
             $data['price'] = $request->input('price') ?? $request->input('purchase_price') ?? 0;
             $data['sale_price'] = $request->input('sale_price') ?? 0;
             $data['position'] = $request->input('position') ?? 0;

@@ -1,16 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CafeSettingController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ComboProductController;
 use App\Http\Controllers\Admin\FoodController;
 use App\Http\Controllers\Admin\IngredientController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PurchaseController;
+use App\Http\Controllers\Admin\PurchaseReturnController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StoreController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -19,33 +20,20 @@ use App\Http\Controllers\Admin\UserController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web Routes (Optimized & Grouped)
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application.
+| Application routes optimized for Breakzone Cafe.
+| Fully cacheable with zero closures.
 |
 */
 
-// Public & Maintenance Routes
-Route::get('/', function () {
-    return view('admin.login');
-});
-
-Route::get('/site-down', function () {
-    Artisan::call('down');
-    return 'Site is now under maintenance mode (down).';
-});
-
-Route::get('/site-up', function () {
-    Artisan::call('up');
-    return 'Site is now live (up).';
-});
-
 // Admin Authentication & Protected Area
 Route::middleware(['admin.redirect'])->group(function () {
-    Route::get('admin', function () {
-        return redirect()->route('login');
-    });
+    // Direct Redirects to /admin/login
+    Route::redirect('/', '/admin/login');
+    Route::redirect('admin', '/admin/login');
+    Route::redirect('login', '/admin/login');
 
     // Guest Auth Routes
     Route::controller(AdminController::class)->group(function () {
@@ -55,11 +43,14 @@ Route::middleware(['admin.redirect'])->group(function () {
 
     // Authenticated Admin Routes
     Route::middleware(['auth'])->group(function () {
-        // Dashboard, Logout & Utilities
+
+        // Dashboard, Logout & System Utilities
         Route::controller(AdminController::class)->group(function () {
             Route::get('admin/dashboard', 'index')->name('dashboard');
-            Route::post('/logout', 'logout')->name('logout');
+            Route::post('logout', 'logout')->name('logout');
             Route::get('clear-cache', 'clearcache')->name('clearcache');
+            Route::get('site-down', 'siteDown')->name('site.down');
+            Route::get('site-up', 'siteUp')->name('site.up');
         });
 
         // Users Management
@@ -70,9 +61,10 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/delete/{id}', 'destroy')->name('destroy');
         });
 
-        // Roles Management
+        // Roles Management (Supports both 'roles' and 'roles.index')
         Route::prefix('roles')->controller(RoleController::class)->group(function () {
             Route::get('/', 'index')->name('roles');
+            Route::get('/list', 'index')->name('roles.index');
             Route::get('/create', 'create')->name('roles.create');
             Route::post('/store', 'store')->name('roles.store');
             Route::get('/{id}/edit', 'edit')->name('roles.edit');
@@ -80,9 +72,10 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('roles.delete');
         });
 
-        // Permissions Management
+        // Permissions Management (Supports both 'permissions' and 'permissions.index')
         Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
             Route::get('/', 'index')->name('permissions');
+            Route::get('/list', 'index')->name('permissions.index');
             Route::post('/store', 'store')->name('permissions.store');
             Route::get('/edit/{id}', 'edit')->name('permissions.edit');
             Route::post('/update/{id}', 'update')->name('permissions.update');
@@ -129,7 +122,7 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
 
-        // Items Management
+        // Items Management (Retail Products)
         Route::prefix('items')->name('items.')->controller(ItemController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/store', 'store')->name('store');
@@ -137,7 +130,7 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
 
-        // Ingredients Management
+        // Ingredients Management (Raw Materials)
         Route::prefix('ingredients')->name('ingredients.')->controller(IngredientController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/store', 'store')->name('store');
@@ -145,8 +138,7 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
 
-        
-        // Foods Management
+        // Foods Management (Prepared Recipes)
         Route::prefix('foods')->name('foods.')->controller(FoodController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/generate-code', 'generateCode')->name('generate-code');
@@ -156,14 +148,36 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
 
-        // Purchases Management
+        // Combo Products (Deals / Packages) Management
+        Route::prefix('combo-products')->name('combo-products.')->controller(ComboProductController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/generate-code', 'generateCode')->name('generate-code');
+            Route::get('/{id}/details', 'getComboDetails')->name('details');
+            Route::post('/store', 'store')->name('store');
+            Route::post('/{id}/update', 'update')->name('update');
+            Route::post('/{id}/toggle-status', 'toggleStatus')->name('toggle-status');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
+
+        // Purchases & Inventory Stock-In Management
         Route::prefix('purchases')->name('purchases.')->controller(PurchaseController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/generate-po', 'generatePoNo')->name('generate-po');
+            Route::get('/store-data', 'getStoreData')->name('store-data');
             Route::get('/product-info', 'getProductInfo')->name('product-info');
             Route::get('/{id}/edit-data', 'editData')->name('edit-data');
             Route::post('/store', 'store')->name('store');
             Route::post('/{id}/update', 'update')->name('update');
+            Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
+        });
+
+        // Purchase Returns & Inventory Stock-Out Management
+        Route::prefix('purchase-returns')->name('purchase-returns.')->controller(PurchaseReturnController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/purchases', 'getPurchases')->name('purchases');
+            Route::get('/purchase-items/{id}', 'getPurchaseItems')->name('purchase-items');
+            Route::get('/{id}/show', 'show')->name('show');
+            Route::post('/store', 'store')->name('store');
             Route::match(['get', 'delete'], '/{id}/delete', 'destroy')->name('delete');
         });
 
@@ -173,6 +187,5 @@ Route::middleware(['admin.redirect'])->group(function () {
             Route::post('/', 'update')->name('update');
         });
 
-        
     });
 });

@@ -3,6 +3,107 @@
 @section('content')
 
     @include('sweetalert::alert')
+
+    <!-- Select2 CSS & Custom Modern Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Modern Select2 Styling matching Image 1 & Bootstrap 5 */
+        .select2-container {
+            width: 100% !important;
+            height: 38px !important;
+        }
+        .select2-container .selection {
+            display: block !important;
+            height: 38px !important;
+        }
+        .select2-container--default .select2-selection--single {
+            height: 38px !important;
+            border: 1px solid #d9dee3 !important;
+            border-radius: 0.375rem !important;
+            display: flex !important;
+            align-items: center !important;
+            background-color: #fff !important;
+            position: relative !important;
+            padding: 0 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #435971 !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            line-height: 36px !important;
+            height: 36px !important;
+            padding-left: 0.85rem !important;
+            padding-right: 2.25rem !important;
+            width: 100% !important;
+            display: block !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #a1acb8 !important;
+            line-height: 36px !important;
+            display: block !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+            width: 28px !important;
+            position: absolute !important;
+            top: 0 !important;
+            right: 6px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            position: static !important;
+            margin: 0 !important;
+            border-color: #8592a3 transparent transparent transparent !important;
+            border-style: solid !important;
+            border-width: 5px 4px 0 4px !important;
+        }
+        .select2-container--default.select2-container--open .select2-selection--single,
+        .select2-container--default .select2-selection--single:focus {
+            border-color: #696cff !important;
+            box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.16) !important;
+            outline: none !important;
+        }
+        .select2-dropdown {
+            border: 1px solid #d9dee3 !important;
+            border-radius: 0.375rem !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+            z-index: 1070 !important;
+            background: #fff !important;
+        }
+        .select2-container--default .select2-search--dropdown {
+            padding: 6px 8px !important;
+            background-color: #f8fafc !important;
+            border-bottom: 1px solid #eceef1 !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 1px solid #d9dee3 !important;
+            border-radius: 0.25rem !important;
+            padding: 6px 10px !important;
+            font-size: 0.875rem !important;
+            outline: none !important;
+            background: #fff !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field:focus {
+            border-color: #696cff !important;
+            box-shadow: 0 0 0 2px rgba(105, 108, 255, 0.15) !important;
+        }
+        .select2-container--default .select2-results__option {
+            padding: 7px 12px !important;
+            font-size: 0.875rem !important;
+            color: #435971 !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #0d6efd !important;
+            color: #fff !important;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: #e7e7ff !important;
+            color: #696cff !important;
+            font-weight: 600 !important;
+        }
+    </style>
     <!-- Layout wrapper -->
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
@@ -57,7 +158,7 @@
                                         <div class="mb-4">
                                             <div class="row g-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label fw-semibold text-dark">Store <span class="text-danger">*</span></label>
+                                                    <label class="form-label fw-semibold text-dark mb-1">Store <span class="text-danger">*</span></label>
                                                     <select name="store_id" id="purchaseStore" class="form-select" required>
                                                         <option value="">Select Store</option>
                                                         @foreach ($stores as $store)
@@ -69,9 +170,12 @@
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label fw-semibold text-dark">Supplier <span class="text-danger">*</span></label>
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <label class="form-label fw-semibold text-dark mb-0">Supplier <span class="text-danger">*</span></label>
+                                                        <span id="supplierLoadingIndicator" class="spinner-border spinner-border-sm text-primary d-none"></span>
+                                                    </div>
                                                     <select name="supplier_id" id="purchaseSupplier" class="form-select" required>
-                                                        <option value="">Select Supplier</option>
+                                                        <option value="">Select Store first</option>
                                                         @foreach ($suppliers as $supplier)
                                                             <option value="{{ $supplier->id }}">
                                                                 {{ $supplier->name }}
@@ -81,17 +185,17 @@
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label fw-semibold text-dark">Purchase Date <span class="text-danger">*</span></label>
+                                                    <label class="form-label fw-semibold text-dark mb-1">Purchase Date <span class="text-danger">*</span></label>
                                                     <input type="date" name="purchase_date" id="purchaseDate" class="form-control"
                                                         value="{{ date('Y-m-d') }}" required>
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
                                                         <label class="form-label fw-semibold text-dark mb-0">PO / Invoice #</label>
                                                         <span id="poLoadingIndicator" class="spinner-border spinner-border-sm text-primary d-none"></span>
                                                     </div>
-                                                    <input type="text" name="po_no" id="purchasePoNo" class="form-control mt-1"
+                                                    <input type="text" name="po_no" id="purchasePoNo" class="form-control"
                                                         value="{{ $nextPoNo }}" placeholder="e.g. PO-20260917-0001">
                                                 </div>
 
@@ -245,51 +349,56 @@
     <div id="hiddenCatalogTemplates" class="d-none">
         {{-- Items Options --}}
         <select id="itemsCatalogSelect">
-            <option value="">Select Item</option>
+            <option value="">Select an Option</option>
             @foreach ($items as $it)
                 <option value="{{ $it->id }}"
                     data-type="item"
                     data-unit_id="{{ $it->unit_id ?? '' }}"
                     data-unit_name="{{ $it->unit ? $it->unit->unit : '-' }}"
                     data-stock="{{ max(0, $it->stock ?? 0) }}"
-                    data-price="{{ $it->price ?? 0 }}">
-                    {{ $it->name }} (Item)
+                    data-price="{{ $it->price ?? 0 }}"
+                    data-code="{{ $it->code ?? '' }}">
+                    {{ $it->name }}
                 </option>
             @endforeach
         </select>
 
         {{-- Ingredients Options --}}
         <select id="ingredientsCatalogSelect">
-            <option value="">Select Ingredient</option>
+            <option value="">Select an Option</option>
             @foreach ($ingredients as $ing)
                 <option value="{{ $ing->id }}"
                     data-type="ingredient"
                     data-unit_id="{{ $ing->buying_unit_id ?? '' }}"
                     data-unit_name="{{ $ing->buyingUnit ? $ing->buyingUnit->unit : '-' }}"
                     data-stock="{{ max(0, $ing->stock ?? 0) }}"
-                    data-price="{{ $ing->purchase_price ?? 0 }}">
-                    {{ $ing->name }} (Ingredient)
+                    data-price="{{ $ing->purchase_price ?? 0 }}"
+                    data-code="{{ $ing->code ?? '' }}">
+                    {{ $ing->name }}
                 </option>
             @endforeach
         </select>
 
         {{-- Foods Options --}}
         <select id="foodsCatalogSelect">
-            <option value="">Select Food</option>
+            <option value="">Select an Option</option>
             @foreach ($foods as $fd)
                 <option value="{{ $fd->id }}"
                     data-type="food"
                     data-unit_id=""
                     data-unit_name="Serving"
                     data-stock="{{ max(0, $fd->stock ?? 0) }}"
-                    data-price="{{ $fd->cost_price > 0 ? $fd->cost_price : $fd->price }}">
-                    {{ $fd->name }} (Food)
+                    data-price="{{ $fd->cost_price > 0 ? $fd->cost_price : $fd->price }}"
+                    data-code="{{ $fd->code ?? '' }}">
+                    {{ $fd->name }}
                 </option>
             @endforeach
         </select>
     </div>
 
 @push('scripts')
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             // Purchases DataTable (Server-Side AJAX)
@@ -349,13 +458,202 @@
             const grandTotalQuantity = document.getElementById('grandTotalQuantity');
             const grandTotalAmount = document.getElementById('grandTotalAmount');
 
-            const itemsCatalogSelect = document.getElementById('itemsCatalogSelect');
-            const ingredientsCatalogSelect = document.getElementById('ingredientsCatalogSelect');
-            const foodsCatalogSelect = document.getElementById('foodsCatalogSelect');
+            // Dynamic Store Catalog Cache
+            let storeDataCache = {
+                suppliers: [],
+                items: [],
+                ingredients: [],
+                foods: []
+            };
 
             document.getElementById('addItemBtn').addEventListener('click', () => addPurchaseRow('item'));
             document.getElementById('addIngredientBtn').addEventListener('click', () => addPurchaseRow('ingredient'));
             document.getElementById('addFoodBtn').addEventListener('click', () => addPurchaseRow('food'));
+
+            // Load Store Data (Suppliers + Catalog) dynamically
+            function loadStoreData(storeId, selectedSupplierId = null, callback = null) {
+                if (!storeId) {
+                    purchaseSupplier.innerHTML = '<option value="">Select Store first</option>';
+                    storeDataCache = { suppliers: [], items: [], ingredients: [], foods: [] };
+                    refreshAllRowDropdowns();
+                    if (typeof callback === 'function') callback(null);
+                    return;
+                }
+
+                const supplierParam = selectedSupplierId ? `&supplier_id=${selectedSupplierId}` : (purchaseSupplier.value ? `&supplier_id=${purchaseSupplier.value}` : '');
+                const supplierSpinner = document.getElementById('supplierLoadingIndicator');
+                if (supplierSpinner) supplierSpinner.classList.remove('d-none');
+
+                fetch(`/purchases/store-data?store_id=${storeId}${supplierParam}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (supplierSpinner) supplierSpinner.classList.add('d-none');
+                        if (data.status) {
+                            storeDataCache = {
+                                suppliers: data.suppliers || [],
+                                items: data.items || [],
+                                ingredients: data.ingredients || [],
+                                foods: data.foods || []
+                            };
+
+                            // Update suppliers dropdown
+                            renderSuppliersDropdown(data.suppliers, selectedSupplierId !== null ? selectedSupplierId : purchaseSupplier.value);
+
+                            // Update row dropdowns options
+                            refreshAllRowDropdowns();
+
+                            if (typeof callback === 'function') {
+                                callback(data);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (supplierSpinner) supplierSpinner.classList.add('d-none');
+                        console.error('Error fetching store data:', err);
+                    });
+            }
+
+            function renderSuppliersDropdown(suppliers, currentVal = '') {
+                const prevVal = currentVal || purchaseSupplier.value;
+                purchaseSupplier.innerHTML = '<option value="">Select Supplier</option>';
+
+                if (!suppliers || suppliers.length === 0) return;
+
+                suppliers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    if (prevVal && String(prevVal) === String(s.id)) {
+                        opt.selected = true;
+                    }
+                    purchaseSupplier.appendChild(opt);
+                });
+            }
+
+            // Get dynamic options HTML for item/ingredient/food - Clean flat list matching Image 1
+            function getProductOptionsHtml(type) {
+                if (!purchaseStore.value) {
+                    return '<option value="">Select Store first</option>';
+                }
+
+                let products = [];
+                if (type === 'ingredient') {
+                    products = storeDataCache.ingredients || [];
+                } else if (type === 'food') {
+                    products = storeDataCache.foods || [];
+                } else {
+                    products = storeDataCache.items || [];
+                }
+
+                if (products.length === 0) {
+                    return '<option value="">Select an Option</option>';
+                }
+
+                let html = '<option value="">Select an Option</option>';
+
+                const supplierSelected = !!purchaseSupplier.value;
+                let listToShow = products;
+
+                if (supplierSelected) {
+                    const supplied = products.filter(p => p.is_supplied_by_selected);
+                    const others = products.filter(p => !p.is_supplied_by_selected);
+                    listToShow = supplied.length > 0 ? [...supplied, ...others] : products;
+                }
+
+                listToShow.forEach(p => {
+                    html += `<option value="${p.id}"
+                        data-type="${type}"
+                        data-unit_id="${p.unit_id || ''}"
+                        data-unit_name="${p.unit_name || '-'}"
+                        data-stock="${p.stock}"
+                        data-price="${p.price}"
+                        data-code="${p.code || ''}">
+                        ${p.name}
+                    </option>`;
+                });
+
+                return html;
+            }
+
+            // Initialize searchable Select2 on a row's product dropdown
+            function initSelect2OnRow(row) {
+                const $select = $(row).find('.product-select');
+                if (!$select.length) return;
+
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    dropdownParent: $('#purchaseModal'),
+                    placeholder: 'Select an Option',
+                    width: '100%',
+                    matcher: function(params, data) {
+                        if ($.trim(params.term) === '') {
+                            return data;
+                        }
+                        if (typeof data.text === 'undefined') {
+                            return null;
+                        }
+                        const term = params.term.toLowerCase();
+                        const text = data.text.toLowerCase();
+                        const code = $(data.element).data('code') ? String($(data.element).data('code')).toLowerCase() : '';
+                        if (text.indexOf(term) > -1 || code.indexOf(term) > -1) {
+                            return data;
+                        }
+                        return null;
+                    }
+                });
+
+                $select.off('select2:open').on('select2:open', function() {
+                    setTimeout(function() {
+                        const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                        if (searchField) searchField.focus();
+                    }, 15);
+                });
+            }
+
+            function refreshAllRowDropdowns() {
+                purchaseTableBody.querySelectorAll('.purchase-row').forEach(row => {
+                    const type = row.dataset.type || 'item';
+                    const select = row.querySelector('.product-select');
+                    const currentVal = select.value;
+
+                    if ($(select).hasClass('select2-hidden-accessible')) {
+                        $(select).select2('destroy');
+                    }
+
+                    select.innerHTML = getProductOptionsHtml(type);
+
+                    if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+                        select.value = currentVal;
+                        initSelect2OnRow(row);
+                        $(select).trigger('change');
+                    } else {
+                        select.value = '';
+                        initSelect2OnRow(row);
+                        row.querySelector('.row-unit-badge').textContent = '-';
+                        row.querySelector('.row-available-stock').textContent = '0.00';
+                        row.querySelector('.row-price').value = '0.00';
+                        calculateRow(row);
+                    }
+                });
+            }
+
+            // Store change listener
+            purchaseStore.addEventListener('change', function() {
+                const storeId = this.value;
+                loadStoreData(storeId);
+            });
+
+            // Supplier change listener
+            purchaseSupplier.addEventListener('change', function() {
+                const storeId = purchaseStore.value;
+                const supplierId = this.value;
+                if (storeId) {
+                    loadStoreData(storeId, supplierId);
+                }
+            });
 
             // Reset modal form for Add New Purchase
             window.resetPurchaseForm = function() {
@@ -364,6 +662,12 @@
                 purchaseModalLabel.textContent = 'Add New Purchase';
                 submitPurchaseBtn.textContent = 'Save Purchase';
                 purchaseDate.value = new Date().toISOString().split('T')[0];
+
+                purchaseTableBody.querySelectorAll('.product-select').forEach(sel => {
+                    if ($(sel).hasClass('select2-hidden-accessible')) {
+                        $(sel).select2('destroy');
+                    }
+                });
 
                 // Auto fetch next PO #
                 fetch("{{ route('purchases.generate-po') }}")
@@ -375,8 +679,17 @@
                     })
                     .catch(() => {});
 
-                purchaseTableBody.innerHTML = '';
-                addPurchaseRow('item');
+                // If store select has options, default to the first store
+                if (purchaseStore.options.length > 1) {
+                    purchaseStore.selectedIndex = 1;
+                    loadStoreData(purchaseStore.value, null, function() {
+                        purchaseTableBody.innerHTML = '';
+                        addPurchaseRow('item');
+                    });
+                } else {
+                    purchaseTableBody.innerHTML = '';
+                    addPurchaseRow('item');
+                }
             };
 
             function calculateRow(row) {
@@ -428,11 +741,11 @@
                 const duplicateBtn = row.querySelector('.row-duplicate-btn');
                 const removeBtn = row.querySelector('.row-remove-btn');
 
-                select.addEventListener('change', function() {
-                    const selected = this.options[this.selectedIndex];
+                function handleProductSelection() {
+                    const selected = select.options[select.selectedIndex];
                     if (!selected || !selected.value) {
                         unitSpan.textContent = '-';
-                        stockSpan.textContent = '0';
+                        stockSpan.textContent = '0.00';
                         unitIdInput.value = '';
                         priceInput.value = '0.00';
                         calculateRow(row);
@@ -442,7 +755,7 @@
                     const type = row.dataset.type || 'item';
                     const productId = selected.value;
 
-                    // Immediately show data attributes from template as fallback
+                    // Immediately show data attributes from template
                     const unitName = selected.dataset.unit_name || '-';
                     const unitId = selected.dataset.unit_id || '';
                     const stock = Math.max(0, parseFloat(selected.dataset.stock) || 0);
@@ -454,8 +767,10 @@
                     priceInput.value = (price % 1 === 0) ? price.toFixed(2) : parseFloat(price.toFixed(4));
                     calculateRow(row);
 
-                    // Fetch 100% fresh live price and stock from DB via AJAX
-                    fetch(`/purchases/product-info?type=${type}&id=${productId}`)
+                    // Fetch 100% fresh live price and store stock from DB via AJAX
+                    const storeId = purchaseStore.value || '';
+                    const supplierId = purchaseSupplier.value || '';
+                    fetch(`/purchases/product-info?type=${type}&id=${productId}&store_id=${storeId}&supplier_id=${supplierId}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.status) {
@@ -470,7 +785,9 @@
                         .catch(err => {
                             console.error('Error fetching live product info:', err);
                         });
-                });
+                }
+
+                $(select).off('change.product').on('change.product', handleProductSelection);
 
                 qtyInput.addEventListener('input', () => calculateRow(row));
                 priceInput.addEventListener('input', () => calculateRow(row));
@@ -482,12 +799,17 @@
 
                 removeBtn.addEventListener('click', () => {
                     if (purchaseTableBody.querySelectorAll('.purchase-row').length > 1) {
+                        const $sel = $(row).find('.product-select');
+                        if ($sel.hasClass('select2-hidden-accessible')) {
+                            $sel.select2('destroy');
+                        }
                         row.remove();
                         renumberRows();
                     } else {
-                        select.value = '';
+                        const $sel = $(row).find('.product-select');
+                        $sel.val('').trigger('change');
                         unitSpan.textContent = '-';
-                        stockSpan.textContent = '0';
+                        stockSpan.textContent = '0.00';
                         unitIdInput.value = '';
                         qtyInput.value = '1';
                         priceInput.value = '0.00';
@@ -501,67 +823,64 @@
                 tr.className = 'purchase-row';
                 tr.dataset.type = type;
 
-                let catalogSelect = itemsCatalogSelect;
-                let typeBadge = '<span class="badge bg-label-primary px-2 py-1 fs-8 flex-shrink-0">ITEM</span>';
+                let typeBadge = '<span class="badge bg-label-primary fs-8 flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 0.75rem; border-radius: 0.375rem; font-weight: 700;">ITEM</span>';
 
                 if (type === 'ingredient') {
-                    catalogSelect = ingredientsCatalogSelect;
-                    typeBadge = '<span class="badge bg-label-success px-2 py-1 fs-8 flex-shrink-0">INGREDIENT</span>';
+                    typeBadge = '<span class="badge bg-label-success fs-8 flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 0.75rem; border-radius: 0.375rem; font-weight: 700;">INGREDIENT</span>';
                 } else if (type === 'food') {
-                    catalogSelect = foodsCatalogSelect;
-                    typeBadge = '<span class="badge bg-label-warning px-2 py-1 fs-8 flex-shrink-0">FOOD</span>';
+                    typeBadge = '<span class="badge bg-label-warning fs-8 flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 0.75rem; border-radius: 0.375rem; font-weight: 700;">FOOD</span>';
                 }
 
-                const optionsHtml = catalogSelect.innerHTML;
+                const optionsHtml = getProductOptionsHtml(type);
                 const idx = purchaseTableBody.querySelectorAll('.purchase-row').length;
 
                 tr.innerHTML = `
-                    <td class="text-center fw-bold text-dark row-index">${idx + 1}</td>
-                    <td>
+                    <td class="text-center fw-bold text-dark row-index" style="vertical-align: middle;">${idx + 1}</td>
+                    <td style="vertical-align: middle;">
                         <div class="d-flex align-items-center gap-2">
                             ${typeBadge}
                             <input type="hidden" name="items[${idx}][type]" value="${type}">
                             <input type="hidden" name="items[${idx}][unit_id]" class="row-unit-id" value="${prefillData ? prefillData.unit_id || '' : ''}">
-                            <select name="items[${idx}][product_id]" class="form-select form-select-sm product-select flex-grow-1 fw-semibold text-dark" style="min-width: 220px;" required>
-                                ${optionsHtml}
-                            </select>
+                            <div class="flex-grow-1" style="min-width: 260px;">
+                                <select name="items[${idx}][product_id]" class="form-select product-select" required>
+                                    ${optionsHtml}
+                                </select>
+                            </div>
                         </div>
                     </td>
-                    <td class="text-center">
-                        <span class="badge bg-light text-dark border row-unit-badge fs-7 fw-semibold">${prefillData ? prefillData.unit_name || '-' : '-'}</span>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <span class="badge bg-light text-dark border row-unit-badge fs-7 fw-semibold d-inline-flex align-items-center justify-content-center" style="height: 38px; min-width: 65px; border-radius: 0.375rem;">${prefillData ? prefillData.unit_name || '-' : '-'}</span>
                     </td>
-                    <td class="text-center">
-                        <span class="text-dark fw-bold row-available-stock">${prefillData ? Math.max(0, parseFloat(prefillData.available_stock) || 0).toFixed(2) : '0.00'}</span>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <span class="text-dark fw-bold row-available-stock d-inline-flex align-items-center justify-content-center" style="height: 38px; font-size: 0.95rem;">${prefillData ? Math.max(0, parseFloat(prefillData.available_stock) || 0).toFixed(2) : '0.00'}</span>
                     </td>
-                    <td>
+                    <td style="vertical-align: middle;">
                         <input type="number" step="any" min="0.0001" name="items[${idx}][quantity]"
-                            class="form-control form-control-sm text-end row-quantity no-spin fw-semibold text-dark"
-                            style="padding: 0.4375rem 0.65rem;"
+                            class="form-control text-end row-quantity no-spin fw-semibold text-dark"
+                            style="height: 38px; font-size: 0.875rem;"
                             value="${prefillData ? prefillData.quantity : '1'}" placeholder="0" required>
                     </td>
-                    <td>
+                    <td style="vertical-align: middle;">
                         <input type="number" step="any" min="0" name="items[${idx}][price]"
-                            class="form-control form-control-sm text-end row-price no-spin fw-semibold text-dark"
-                            style="padding: 0.4375rem 0.65rem;"
+                            class="form-control text-end row-price no-spin fw-semibold text-dark"
+                            style="height: 38px; font-size: 0.875rem;"
                             value="${prefillData ? ((parseFloat(prefillData.price) % 1 === 0) ? parseFloat(prefillData.price).toFixed(2) : parseFloat(prefillData.price).toFixed(4)) : '0.00'}"
                             placeholder="0.00" required>
                     </td>
-                    <td class="text-end">
-                        <span class="row-total-price fw-bold text-dark fs-6">${prefillData ? prefillData.total_price.toFixed(2) : '0.00'}</span>
+                    <td class="text-end" style="vertical-align: middle;">
+                        <span class="row-total-price fw-bold text-dark fs-6 d-inline-flex align-items-center justify-content-end" style="height: 38px;">${prefillData ? prefillData.total_price.toFixed(2) : '0.00'}</span>
                     </td>
-                    <td class="text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-primary row-duplicate-btn" title="Add Row Below">
-                                <i class="bx bx-plus"></i>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <div class="d-flex justify-content-center align-items-center gap-1" style="height: 38px;">
+                            <button type="button" class="btn btn-outline-primary row-duplicate-btn d-inline-flex align-items-center justify-content-center p-0" style="height: 36px; width: 36px;" title="Add Row Below">
+                                <i class="bx bx-plus fs-5"></i>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger row-remove-btn" title="Remove Row">
-                                <i class="bx bx-minus"></i>
+                            <button type="button" class="btn btn-outline-danger row-remove-btn d-inline-flex align-items-center justify-content-center p-0" style="height: 36px; width: 36px;" title="Remove Row">
+                                <i class="bx bx-minus fs-5"></i>
                             </button>
                         </div>
                     </td>
                 `;
-
-                attachRowEvents(tr);
 
                 if (afterRow && afterRow.nextSibling) {
                     purchaseTableBody.insertBefore(tr, afterRow.nextSibling);
@@ -574,8 +893,16 @@
                     sel.value = prefillData.product_id;
                 }
 
+                attachRowEvents(tr);
+                initSelect2OnRow(tr);
                 renumberRows();
             }
+
+            $('#purchaseModal').on('shown.bs.modal', function() {
+                purchaseTableBody.querySelectorAll('.purchase-row').forEach(row => {
+                    initSelect2OnRow(row);
+                });
+            });
 
             // Delegated Edit Purchase Click
             $(document).on('click', '.edit-purchase-btn', function() {
@@ -592,20 +919,24 @@
                         purchaseModalLabel.textContent = `Edit Purchase (${p.po_no})`;
 
                         purchaseStore.value = p.store_id || '';
-                        purchaseSupplier.value = p.supplier_id || '';
                         purchaseDate.value = p.purchase_date || '';
                         purchasePoNo.value = p.po_no || '';
                         purchaseNotes.value = p.notes || '';
 
-                        // Populate line items
-                        purchaseTableBody.innerHTML = '';
-                        if (p.items && p.items.length > 0) {
-                            p.items.forEach(item => {
-                                addPurchaseRow(item.type, null, item);
-                            });
-                        } else {
-                            addPurchaseRow('item');
-                        }
+                        // Load dynamic store data and prefill
+                        loadStoreData(p.store_id, p.supplier_id, function() {
+                            purchaseSupplier.value = p.supplier_id || '';
+
+                            // Populate line items
+                            purchaseTableBody.innerHTML = '';
+                            if (p.items && p.items.length > 0) {
+                                p.items.forEach(item => {
+                                    addPurchaseRow(item.type, null, item);
+                                });
+                            } else {
+                                addPurchaseRow('item');
+                            }
+                        });
                     })
                     .catch(err => {
                         console.error("Error fetching purchase data:", err);

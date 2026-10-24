@@ -52,8 +52,16 @@ class PermissionSeeder extends Seeder
                 'children' => ['food add', 'food edit', 'food delete'],
             ],
             [
+                'base'     => 'combo product management',
+                'children' => ['combo product add', 'combo product edit', 'combo product delete'],
+            ],
+            [
                 'base'     => 'purchase management',
                 'children' => ['purchase add', 'purchase edit', 'purchase delete'],
+            ],
+            [
+                'base'     => 'purchase return management',
+                'children' => ['purchase return add', 'purchase return edit', 'purchase return delete'],
             ],
             [
                 'base'     => 'user management',
@@ -114,6 +122,7 @@ class PermissionSeeder extends Seeder
                     'item management', 'item add', 'item edit',
                     'ingredient management', 'ingredient add', 'ingredient edit',
                     'food management', 'food add', 'food edit',
+                    'combo product management', 'combo product add', 'combo product edit',
                 ])->get());
             } elseif (in_array($roleName, ['Accountant', 'Branch Accountant'])) {
                 $role->syncPermissions(Permission::whereIn('name', [
@@ -125,6 +134,7 @@ class PermissionSeeder extends Seeder
                     'item management',
                     'ingredient management',
                     'food management',
+                    'combo product management',
                 ])->get());
             } elseif ($roleName === 'Sales Associate') {
                 $role->syncPermissions(Permission::whereIn('name', [
@@ -134,6 +144,7 @@ class PermissionSeeder extends Seeder
                     'item management',
                     'ingredient management',
                     'food management',
+                    'combo product management',
                 ])->get());
             }
         }

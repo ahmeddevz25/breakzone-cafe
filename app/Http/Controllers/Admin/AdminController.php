@@ -123,6 +123,11 @@ class AdminController extends Controller
             ];
         }
 
+        $stores = Store::where('status', 'A')->orderBy('position')->get();
+        $lowStockIngredients = Ingredient::with(['buyingUnit', 'usageUnit', 'supplier'])->orderBy('stock')->take(5)->get();
+        $topFoods = Food::with('category')->orderBy('id')->take(5)->get();
+        $stockHealthPercentage = 94;
+
         return view('admin.index', compact(
             'counts',
             'totalPurchasesAmount',
@@ -133,7 +138,11 @@ class AdminController extends Controller
             'recentPurchases',
             'salesChartLabels',
             'salesChartDatasets',
-            'salesAssociatesData'
+            'salesAssociatesData',
+            'stores',
+            'lowStockIngredients',
+            'topFoods',
+            'stockHealthPercentage'
         ));
     }
 
@@ -192,5 +201,17 @@ class AdminController extends Controller
         Artisan::call('view:clear');
 
         return redirect()->back()->with('success', 'Cache Cleared successfully!');
+    }
+
+    public function siteDown()
+    {
+        Artisan::call('down');
+        return response('Site is now under maintenance mode (down).', 200);
+    }
+
+    public function siteUp()
+    {
+        Artisan::call('up');
+        return response('Site is now live (up).', 200);
     }
 }

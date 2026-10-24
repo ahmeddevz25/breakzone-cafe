@@ -146,6 +146,18 @@
             </li>
         @endcan
 
+        @can('combo product management')
+            <li class="menu-item saas-menu-item {{ request()->routeIs('combo-products.*') ? 'active open' : '' }}" data-title="Combo Products">
+                <a href="{{ route('combo-products.index') }}" class="menu-link" title="Combo Products">
+                    <span class="saas-icon-badge icon-badge-pink">
+                        <i class="bx bx-layer"></i>
+                    </span>
+                    <span class="saas-link-text">Combo Products</span>
+                    <span class="saas-active-pill"></span>
+                </a>
+            </li>
+        @endcan
+
         @can('purchase management')
             <li class="menu-item saas-menu-item {{ request()->routeIs('purchases.*') ? 'active open' : '' }}" data-title="Purchases">
                 <a href="{{ route('purchases.index') }}" class="menu-link" title="Purchases">
@@ -153,6 +165,18 @@
                         <i class="bx bx-cart-alt"></i>
                     </span>
                     <span class="saas-link-text">Purchases</span>
+                    <span class="saas-active-pill"></span>
+                </a>
+            </li>
+        @endcan
+
+        @can('purchase return management')
+            <li class="menu-item saas-menu-item {{ request()->routeIs('purchase-returns.*') ? 'active open' : '' }}" data-title="Purchase Returns">
+                <a href="{{ route('purchase-returns.index') }}" class="menu-link" title="Purchase Returns">
+                    <span class="saas-icon-badge icon-badge-orange">
+                        <i class="bx bx-rotate-left"></i>
+                    </span>
+                    <span class="saas-link-text">Purchase Returns</span>
                     <span class="saas-active-pill"></span>
                 </a>
             </li>
@@ -236,7 +260,7 @@
 
     <!-- SAAS SIDEBAR FOOTER (USER & SYSTEM CARD) -->
     <div class="saas-sidebar-footer">
-        <div class="saas-user-card">
+        <div class="saas-user-card" title="{{ Auth::user()->name ?? 'Admin' }} ({{ Auth::user()->roles->first()->name ?? 'Store Admin' }})">
             <div class="saas-user-avatar-wrap">
                 <div class="saas-user-avatar">
                     {{ strtoupper(substr(Auth::user()->name ?? 'BZ', 0, 2)) }}
@@ -262,10 +286,6 @@
                     </button>
                 </form>
             </div>
-        </div>
-        <div class="saas-status-bar">
-            <span class="saas-status-indicator"></span>
-            <span>BreakZone POS v2.4 • Online</span>
         </div>
     </div>
 

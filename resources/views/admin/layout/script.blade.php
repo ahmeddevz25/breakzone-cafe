@@ -425,6 +425,84 @@
                     syncIconState();
                 }, 150);
             });
+
+            // Quick Module Search & Navigator
+            var searchInput = document.getElementById('bzGlobalSearch');
+            var searchDropdown = document.getElementById('bzSearchDropdown');
+            var appModules = [
+                { name: 'Dashboard', url: '{{ route("dashboard") }}', icon: 'bx-grid-alt' },
+                { name: 'Stores', url: '{{ route("stores.index") }}', icon: 'bx-store-alt' },
+                { name: 'Suppliers', url: '{{ route("suppliers.index") }}', icon: 'bx-group' },
+                { name: 'Brands', url: '{{ route("brands.index") }}', icon: 'bx-badge-check' },
+                { name: 'Categories', url: '{{ route("categories.index") }}', icon: 'bx-category-alt' },
+                { name: 'Units', url: '{{ route("units.index") }}', icon: 'bx-ruler' },
+                { name: 'Items', url: '{{ route("items.index") }}', icon: 'bx-coffee' },
+                { name: 'Ingredients', url: '{{ route("ingredients.index") }}', icon: 'bx-dish' },
+                { name: 'Foods', url: '{{ route("foods.index") }}', icon: 'bx-restaurant' },
+                { name: 'Combo Products', url: '{{ route("combo-products.index") }}', icon: 'bx-layer' },
+                { name: 'Purchases', url: '{{ route("purchases.index") }}', icon: 'bx-cart-alt' },
+                { name: 'Purchase Returns', url: '{{ route("purchase-returns.index") }}', icon: 'bx-rotate-left' },
+                { name: 'Users', url: '{{ route("users.index") }}', icon: 'bx-user-pin' },
+                { name: 'Roles', url: '{{ route("roles") }}', icon: 'bx-shield-quarter' },
+                { name: 'Permissions', url: '{{ route("permissions") }}', icon: 'bx-key' },
+                { name: 'Cafe Settings', url: '{{ route("cafe-settings.index") }}', icon: 'bx-cog' }
+            ];
+
+            if (searchInput && searchDropdown) {
+                searchInput.addEventListener('input', function() {
+                    var q = this.value.trim().toLowerCase();
+                    if (!q) {
+                        searchDropdown.style.display = 'none';
+                        searchDropdown.innerHTML = '';
+                        return;
+                    }
+
+                    var matches = appModules.filter(function(m) {
+                        return m.name.toLowerCase().indexOf(q) !== -1;
+                    });
+
+                    if (matches.length === 0) {
+                        searchDropdown.innerHTML = '<div class="px-3 py-2 text-muted small">No module found</div>';
+                    } else {
+                        var html = '';
+                        matches.forEach(function(m) {
+                            html += '<a href="' + m.url + '" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" style="font-size: 13px; font-weight: 600;">' +
+                                        '<i class="bx ' + m.icon + ' text-primary"></i>' +
+                                        '<span>' + m.name + '</span>' +
+                                    '</a>';
+                        });
+                        searchDropdown.innerHTML = html;
+                    }
+                    searchDropdown.style.display = 'block';
+                });
+
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        var firstLink = searchDropdown.querySelector('a.dropdown-item');
+                        if (firstLink) {
+                            e.preventDefault();
+                            window.location.href = firstLink.getAttribute('href');
+                        }
+                    } else if (e.key === 'Escape') {
+                        searchDropdown.style.display = 'none';
+                    }
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+                        searchDropdown.style.display = 'none';
+                    }
+                });
+
+                // Ctrl + K shortcut
+                document.addEventListener('keydown', function(e) {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                        e.preventDefault();
+                        searchInput.focus();
+                        searchInput.select();
+                    }
+                });
+            }
         }
 
         if (document.readyState === 'loading') {

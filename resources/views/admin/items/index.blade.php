@@ -84,8 +84,8 @@
                                                 </select>
                                             </div>
 
-                                            {{-- Row 2: Classification (3 columns) --}}
-                                            <div class="col-md-4">
+                                            {{-- Row 2: Classification (4 columns) --}}
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Item Category <span class="text-danger">*</span></label>
                                                 <select name="category_id" id="itemCategory" class="form-select" required>
                                                     <option value="">Select Category</option>
@@ -97,7 +97,7 @@
                                                 </select>
                                             </div>
 
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Unit <span class="text-danger">*</span></label>
                                                 <select name="unit_id" id="itemUnit" class="form-select" required>
                                                     <option value="">Select Unit</option>
@@ -109,13 +109,25 @@
                                                 </select>
                                             </div>
 
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Brand</label>
                                                 <select name="brand_id" id="itemBrand" class="form-select">
                                                     <option value="">Select Brand</option>
                                                     @foreach ($brands as $brand)
                                                         <option value="{{ $brand->id }}">
                                                             {{ $brand->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label class="form-label fw-semibold">Supplier</label>
+                                                <select name="supplier_id" id="itemSupplier" class="form-select">
+                                                    <option value="">Select Supplier (Optional)</option>
+                                                    @foreach ($suppliers as $sup)
+                                                        <option value="{{ $sup->id }}">
+                                                            {{ $sup->name }}
                                                         </option>
                                                     @endforeach
                                                 </select>
@@ -201,6 +213,10 @@
                                                     <tr>
                                                         <th>Store</th>
                                                         <td id="v_store" class="text-dark"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Supplier</th>
+                                                        <td id="v_supplier" class="text-dark"></td>
                                                     </tr>
                                                     <tr>
                                                         <th>Category</th>
@@ -311,6 +327,7 @@
 
             const itemName = document.getElementById('itemName');
             const itemStore = document.getElementById('itemStore');
+            const itemSupplier = document.getElementById('itemSupplier');
             const itemCategory = document.getElementById('itemCategory');
             const itemCode = document.getElementById('itemCode');
             const itemUnit = document.getElementById('itemUnit');
@@ -347,6 +364,7 @@
                 submitBtn.textContent = 'Save Item';
                 itemForm.reset();
 
+                if (itemSupplier) itemSupplier.value = "";
                 itemPrice.value = "0";
                 itemSalePrice.value = "0";
                 itemPosition.value = "0";
@@ -361,6 +379,7 @@
                 const id = $(this).data('id');
                 const name = $(this).data('name');
                 const storeId = $(this).data('store_id');
+                const supplierId = $(this).data('supplier_id');
                 const categoryId = $(this).data('category_id');
                 const code = $(this).data('code');
                 const unitId = $(this).data('unit_id');
@@ -387,6 +406,7 @@
                 // Populate form fields
                 itemName.value = name || '';
                 itemStore.value = storeId || '';
+                if (itemSupplier) itemSupplier.value = supplierId || '';
                 itemCategory.value = categoryId || '';
                 itemCode.value = code || '';
                 itemUnit.value = unitId || '';
@@ -411,6 +431,7 @@
                 $('#v_name').text($(this).data('name') || '-');
                 $('#v_code').text($(this).data('code') || '-');
                 $('#v_store').text($(this).data('store') || '-');
+                $('#v_supplier').text($(this).data('supplier') || '-');
                 $('#v_category').html($(this).data('category') || '-');
                 $('#v_unit').text($(this).data('unit') || '-');
                 $('#v_brand').text($(this).data('brand') || '-');

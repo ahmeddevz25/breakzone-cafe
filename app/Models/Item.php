@@ -14,6 +14,7 @@ class Item extends Model
 
     protected $fillable = [
         'store_id',
+        'supplier_id',
         'name',
         'code',
         'category_id',
@@ -43,6 +44,11 @@ class Item extends Model
     public function store()
     {
         return $this->belongsTo(Store::class, 'store_id');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function category()
